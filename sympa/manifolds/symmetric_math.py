@@ -1,6 +1,10 @@
-# All complex_ operations assume that the tensors are of the shape (b, 2, n, n), which represent a matrix with complex
-# entries
-# (or cmat in case that I also need complex operations)
+# Definition of operations for points represented as symmetric matrices with complex entries.
+# All sym_ operations assume that tensors are of the shape (b, 2, n, n), which represent a matrix with complex
+# entries.
+# b: batch size
+# 2: element in position 0 represents real part of the complex entry
+#    element in position 1 represents imaginary part of the complex entry
+# n: dimensions of the matrix
 
 import torch
 
@@ -34,33 +38,33 @@ def imag(x: torch.Tensor):
 
 
 def stick(real_part: torch.Tensor, imag_part: torch.Tensor):
-    """Returns a complex tensor made of the real and imaginary parts"""
+    """Returns a symmetric complex tensor made of the real and imaginary parts"""
     return torch.stack((real_part, imag_part), dim=1)
 
 
-def conjugate(x: torch.Tensor):
+def sym_conjugate(x: torch.Tensor):
     return stick(real(x), -imag(x))
 
 
-def abs(x: torch.Tensor):
+def sym_abs(x: torch.Tensor):
     result = torch.sqrt(real(x) ** 2 + imag(x) ** 2)
     return result
 
 
-def complex_add(x: torch.Tensor, y: torch.Tensor):
+def sym_add(x: torch.Tensor, y: torch.Tensor):
     return x + y
 
 
-def complex_sub(x: torch.Tensor, y: torch.Tensor):
+def sym_sub(x: torch.Tensor, y: torch.Tensor):
     return x - y
 
 
-def complex_pow(x: torch.Tensor, exponent):
+def sym_pow(x: torch.Tensor, exponent):
     """
     x = a + ib = r (cosθ + i sinθ) where r^2 = a^2 + b^2 and tanθ = b / a.
     Then: (a + ib)^n = r^n (cos(nθ) + i sin(nθ)).
     """
-    r = abs(x)
+    r = sym_abs(x)
     r = torch.pow(r, exponent)
     tita = artanh(imag(x) / real(x))
     tita = tita * exponent
@@ -69,7 +73,7 @@ def complex_pow(x: torch.Tensor, exponent):
     return stick(real_part, imag_part)
 
 
-def complex_bmm(x: torch.Tensor, y: torch.Tensor):
+def sym_bmm(x: torch.Tensor, y: torch.Tensor):
     """
     x = a + ib; y = c + id
     xy = (a + ib)(c + id)
@@ -89,7 +93,30 @@ def complex_bmm(x: torch.Tensor, y: torch.Tensor):
     return stick(out_real, out_imag)
 
 
-def repr(x: torch.Tensor):
+def sym_make_symmetric(x: torch.Tensor):
+    """
+    Copies the values on the upper triangular to the lower triangular in order to make it symmetric
+    :param x: b x 2 x n x n
+    :return:
+    """
+    real_sym = _make_symmetric(real(x))
+    imag_sym = _make_symmetric(imag(x))
+    return stick(real_sym, imag_sym)
+
+
+def _make_symmetric(x: torch.Tensor):
+    """
+    Copies the values on the upper triangular to the lower triangular in order to make it symmetric
+    :param x: b x n x n
+    :return:
+    """
+    # takes the upper triangular and transpose it
+    lower_triangular = torch.triu(x, diagonal=1).transpose(1, 2)
+    upper_triangular = torch.triu(x)
+    return lower_triangular + upper_triangular
+
+
+def sym_repr(x: torch.Tensor):
     batch_size, _, n, _ = x.size()
     real_x, imag_x = real(x), imag(x)
     result = []
@@ -102,30 +129,3 @@ def repr(x: torch.Tensor):
         result.append("\n".join(rows))
         result.append("")
     return "\n".join(result)
-
-
-def trace(x: torch.Tensor, diagonal_index=None) -> torch.Tensor:
-    """
-    :param x: b x 2 x ndims x ndims
-    :return:
-    """
-
-    # Mepa que con usar esta funcion alcanza: https://pytorch.org/docs/stable/torch.html#torch.diagonal
-
-
-    if diagonal_index is None:
-        ndims = x.size(-1)
-        diagonal_index = torch.eye(ndims)
-
-
-
-
-    # TODO recibo la diagonal_index o la calculo, y luego calculo la traza de todo esto
-    # Idea: calculo la traza real, calculo la traza imaginaria, y luego devuelvo a modo de tupla o nro complejo, ya que
-    # es la suma de los n nros complejos que estan en la diagonal. Ver si no hay funciones ya para obtener la diagonal
-    pass
-
-
-def diagonal_index(ndim: int) -> torch.Tensor:
-    # TODO calcular los indices de la diagonal de un tensor de ndim x ndim y ver si esto sirve asi para indexar en la funcion trace
-    return torch.eye(ndim)
