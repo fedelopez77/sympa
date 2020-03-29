@@ -1,7 +1,7 @@
 from typing import Union, Tuple, Optional
 import torch
 from geoopt.manifolds.base import Manifold, ScalingInfo
-from sympa.manifolds import utils
+from sympa.manifolds import complex_math
 
 
 class UpperHalfSpaceManifold(Manifold):
@@ -17,7 +17,7 @@ class UpperHalfSpaceManifold(Manifold):
         # TODO calculate indexes of diagonal and store them to calculate trace later
 
     def dist(self, x: torch.Tensor, y: torch.Tensor, *, keepdim=False) -> torch.Tensor:
-        r_metric = utils.r_metric(x, y)
+        r_metric = complex_math.r_metric(x, y)
         sqrt_r_metric = torch.pow(r_metric, 0.5)
         num = 1 + sqrt_r_metric
         denom = 1 - sqrt_r_metric
