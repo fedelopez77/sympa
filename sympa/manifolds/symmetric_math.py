@@ -7,26 +7,7 @@
 # n: dimensions of the matrix
 
 import torch
-
-
-class Artanh(torch.autograd.Function):
-    @staticmethod
-    def forward(ctx, x):
-        x = x.clamp(-1 + 1e-5, 1 - 1e-5)
-        ctx.save_for_backward(x)
-        dtype = x.dtype
-        x = x.double()
-        res = (torch.log_(1 + x).sub_(torch.log_(1 - x))).mul_(0.5)
-        return res.to(dtype)
-
-    @staticmethod
-    def backward(ctx, grad_output):
-        (input,) = ctx.saved_tensors
-        return grad_output / (1 - input ** 2)
-
-
-def artanh(x):
-    return Artanh.apply(x)
+from geoopt.manifolds.poincare.math import artanh
 
 
 def real(x: torch.Tensor):
@@ -107,6 +88,9 @@ def sym_make_symmetric(x: torch.Tensor):
 def _make_symmetric(x: torch.Tensor):
     """
     Copies the values on the upper triangular to the lower triangular in order to make it symmetric
+
+    Alternative: M + M.transpose() is always symmetric
+
     :param x: b x n x n
     :return:
     """
@@ -124,8 +108,31 @@ def sym_repr(x: torch.Tensor):
         real_item, imag_item = real_x[b_i], imag_x[b_i]
         rows = []
         for i in range(n):
-            row = [f"{real_item[i][j]:.4f}+{imag_item[i][j]:.4f}j" for j in range(n)]
+            row = [f"{real_item[i][j]:.4f}{'+' if imag_item[i][j] >= 0 else ''}{imag_item[i][j]:.4f}j" for j in range(n)]
             rows.append("    ".join(row))
         result.append("\n".join(rows))
         result.append("")
     return "\n".join(result)
+
+
+def sym_inverse(x: torch.Tensor):
+    """
+    It calculates the inverse of a matrix with complex entries according to the algorithm explained here:
+    "Method to Calculate the Inverse of a Complex Matrix using Real Matrix Inversion" by Andreas Falkenberg
+    https://pdfs.semanticscholar.org/f278/b548b5121fd0d09c2e589439b97fad16ece3.pdf
+
+    Given a squared matrix with complex entries Z, such that Z = A + iC where A,C are squared matrices with real
+    entries, the algorithm returns M = U + iV, where M = Inverse(Z) and U,V are squared matrices with real entries
+    Steps:
+        R = inverse(A) * C
+        U = inverse(C * R + A)
+        V = - (R * U)
+
+    * denotes matrix multiplication
+    """
+    a, c = real(x), imag(x)
+
+    r = torch.inverse(a).bmm(c)
+    u = torch.inverse(c.bmm(r) + a)
+    v = (r.bmm(u)) * -1
+    return stick(u, v)

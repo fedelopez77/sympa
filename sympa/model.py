@@ -3,7 +3,7 @@ import torch.nn as nn
 from sympa.utils import get_logging
 from sympa import config
 import geoopt as gt
-from sympa.manifolds import BoundedDomainManifold, UpperHalfSpaceManifold
+from sympa.manifolds import BoundedDomainManifold, UpperHalfManifold
 from sympa.manifolds import symmetric_math as smath
 
 
@@ -27,7 +27,7 @@ class Embeddings(nn.Module):
 
 
 class ComplexEmbeddings(Embeddings):
-    def __init__(self, num_embeddings, embedding_dim, manifold=UpperHalfSpaceManifold()):
+    def __init__(self, num_embeddings, embedding_dim, manifold=UpperHalfManifold()):
         _weight = torch.Tensor(num_embeddings, 2, embedding_dim, embedding_dim)
         _weight = smath.sym_make_symmetric(_weight)
 
