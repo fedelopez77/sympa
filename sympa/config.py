@@ -6,6 +6,7 @@ PREP_PATH = Path("data")
 CKPT_PATH = Path("ckpt")
 TENSORBOARD_PATH = Path("tensorboard")
 PREPROCESSED_FILE = "preprocessed-data.pt"
+PLOT_EXPORT_PATH = Path("plots")
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 if torch.cuda.is_available():
