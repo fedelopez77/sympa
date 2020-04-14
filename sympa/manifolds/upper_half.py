@@ -23,7 +23,23 @@ class UpperHalfManifold(SymmetricManifold):
         super().__init__(ndim=ndim)
 
     def r_metric(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-        pass
+        """
+        R metric for the Upper half space model:
+        Given z1, z2 in H_n, R: S_n x S_n -> Mat(n, C)
+            R(z1, z2) = (z1 - z2) (z1 - ẑ2)^-1 (ẑ1 - ẑ2) (ẑ1 - z2)^-1
+        """
+        x_conj = smath.sym_conjugate(x)
+        y_conj = smath.sym_conjugate(y)
+
+        term_a = smath.sym_sub(x, y)
+        term_b = smath.sym_inverse(smath.sym_sub(x, y_conj))
+        term_c = smath.sym_sub(x_conj, y_conj)
+        term_d = smath.sym_inverse(smath.sym_sub(x_conj, y))
+
+        res = smath.sym_bmm(term_a, term_b)
+        res = smath.sym_bmm(res, term_c)
+        res = smath.sym_bmm(res, term_d)
+        return res
 
     def egrad2rgrad(self, x: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
         """
@@ -69,28 +85,17 @@ class UpperHalfManifold(SymmetricManifold):
         2) D_tilde = clamp(D, min=0)
         3) Y_tilde = SD_tildeS^-1
         """
-        s, eigenvalues = self.diagonalize(x)
-        eigenvalues = torch.clamp(eigenvalues, min=0)
-        d_tilde = torch.diag_embed(eigenvalues)
-        y_tilde = s.bmm(d_tilde).bmm(s.inverse())
+        y = smath.imag(x)
+        y_tilde = smath.sym_conjugate_projection(y)
         return smath.stick(smath.real(x), y_tilde)
 
-    def diagonalize(self, y: torch.Tensor):
-        """
-        Y = Im(X)   Y is a squared symmetric matrix, then Y can be decomposed (diagonalized) as Y = SDS^-1
-        where S is the matrix composed by the eigenvectors of Y (S = [v_1, v_2, ..., v_n] where v_i are the
-        eigenvectors), D is the diagonal matrix constructed from the corresponding eigenvalues, and S^-1 is the
-        matrix inverse of S.
 
-        This function could be implemented as:
-        Pre: y = smath.imag(x)                                                      # b x n x n
-        evalues, evectors = torch.symeig(y, eigenvectors=True)                      # evalues are in ascending order
-        return evectors, torch.diag_embed(evalues), torch.inverse(evectors)
+def get_conjugate_of_r(x: torch.Tensor, y: torch.Tensor):
+    """A = (ẑ1 - z2)(ẑ1 - ẑ2) ^ {-1}."""
+    x_conj = smath.sym_conjugate(x)
+    y_conj = smath.sym_conjugate(y)
+    term_a = smath.sym_sub(x_conj, y)
+    term_b = smath.sym_inverse(smath.sym_sub(x_conj, y_conj))
 
-        but since I don't need everything I do not return the eigenvalues in a diagonal matrix form.
-
-        :param y: b x n x n
-        :return: eigenvalues, eigenvectors
-        """
-        eigenvalues, eigenvectors = torch.symeig(y, eigenvectors=True)                  # evalues are in ascending order
-        return eigenvalues, eigenvectors
+    res = smath.sym_bmm(term_a, term_b)
+    return res

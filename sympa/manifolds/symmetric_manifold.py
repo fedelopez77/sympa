@@ -7,7 +7,7 @@ from sympa.manifolds import symmetric_math as smath
 
 class SymmetricManifold(Manifold, ABC):
     """
-    Manifold to work on spaces S_n = {z \in Sym(n, C)}. This is, z models a point in the space S. z is a symmetric
+    Manifold to work on spaces S_n = {z in Sym(n, C)}. This is, z models a point in the space S. z is a symmetric
     matrix of size nxn, with complex entries.
 
     Abstract manifold that contains the common operations for manifolds of Symmetric matrices with complex entries
@@ -61,13 +61,9 @@ class SymmetricManifold(Manifold, ABC):
         approx = x + u
         return self.projx(approx)
 
-    # TODO: is this manifold specific or the same for both
     def egrad2rgrad(self, x: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
         """
         Transform gradient computed using autodiff to the correct Riemannian gradient for the point :math:`x`.
-
-        If you have a function f(z) on Hn, then the gradient is the  y * grad_eucl(f(z)) * y,
-        where y is the imaginary part of z, and multiplication is just matrix multiplication.
 
         Parameters
         ----------
@@ -81,15 +77,7 @@ class SymmetricManifold(Manifold, ABC):
         torch.Tensor
             grad vector in the Riemannian manifold
         """
-        # TODO: CHECK THIS!!!!!!!!!!
-        # TODO: If the gradient has also an imaginary part and a real part, this will fail. In that case it would be:
-        # real_grad, imag_grad = smath.real(u), smath.imag(u)
-        # y = smath.imag(x)
-        # real_grad = y.bmm(real_grad).bmm(y)
-        # imag_grad = y.bmm(imag_grad).bmm(y)
-        # return smath.stick(real_grad, imag_grad)
-        y = smath.imag(x)
-        return y.bmm(u).bmm(y)
+        raise NotImplementedError
 
     def proju(self, x: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
         return self.egrad2rgrad(x, u)

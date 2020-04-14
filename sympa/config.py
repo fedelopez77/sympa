@@ -2,7 +2,7 @@
 import torch
 from pathlib import Path
 
-PREP_PATH = Path("data/prep")
+PREP_PATH = Path("data")
 CKPT_PATH = Path("ckpt")
 TENSORBOARD_PATH = Path("tensorboard")
 PREPROCESSED_FILE = "preprocessed-data.pt"

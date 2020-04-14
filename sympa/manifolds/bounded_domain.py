@@ -4,8 +4,6 @@ from geoopt.manifolds.base import Manifold
 from sympa.manifolds import SymmetricManifold
 from sympa.manifolds import symmetric_math as smath
 
-EPS = {torch.float32: 4e-3, torch.float64: 1e-5}
-
 
 class BoundedDomainManifold(SymmetricManifold):
     """
@@ -28,9 +26,31 @@ class BoundedDomainManifold(SymmetricManifold):
         # TODO: validate the formula and implement it
         pass
 
-    def egrad2rgrad(self, x: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
-        # TODO: see if this is the same than in the upper half space
-        pass
+    def egrad2rgrad(self, z: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
+        """
+        Transform gradient computed using autodiff to the correct Riemannian gradient for the point :math:`x`.
+
+        If you have a function f(z) on Hn, then the gradient is the  A * grad_eucl(f(z)) * A,
+        where A = (Id - \overline{Z}Z), and multiplication is just matrix multiplication.
+
+        Parameters
+        ----------
+        x torch.Tensor
+            point on the manifold
+        u torch.Tensor
+            gradient to be projected
+
+        Returns
+        -------
+        torch.Tensor
+            grad vector in the Riemannian manifold
+        """
+        # TODO: Check this!!!!!!!!!!!!!!!!!!
+        # Assuming that the gradient is a tensor of b x 2 x n x n and it has a real and an imaginary part:
+        a = get_id_minus_conjugate_z_times_z(z)
+        a_times_grad = smath.sym_bmm(a, u)
+        a_times_grad_times_a = smath(a_times_grad, a)
+        return a_times_grad_times_a
 
     def projx(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -47,7 +67,7 @@ class BoundedDomainManifold(SymmetricManifold):
 
         max_norm = torch.max(v.norm(dim=1, keepdim=True), u.norm(dim=1, keepdim=True)).unsqueeze(dim=1)
         cond = max_norm >= 1
-        max_norm = max_norm * (1 + EPS[x.dtype])
+        max_norm = max_norm * (1 + smath.EPS[x.dtype])
         real_x, imag_x = smath.real(x), smath.imag(x)
         projected_real_x = real_x / max_norm
         projected_imag_x = imag_x / max_norm
@@ -68,3 +88,12 @@ def get_complex_vector_of_entries(v: torch.Tensor, entries: list):
     return torch.cat(components, dim=1)
 
 
+def get_id_minus_conjugate_z_times_z(z: torch.Tensor):
+    """
+    :param z: b x 2 x n x n
+    :return: Id - \overline(z)z
+    """
+    identity = smath.sym_identity_from_tensor(z)
+    conj_z = smath.sym_conjugate(z)
+    conj_z_z = smath.sym_bmm(conj_z, z)
+    return smath.sym_sub(identity, conj_z_z)
