@@ -28,7 +28,7 @@ def config_parser(parser):
     parser.add_argument("--grad_accum_steps", default=1, type=int,
                         help="Number of update steps to acum before backward.")
     # Others
-    parser.add_argument("--save_epochs", default=100, type=int, help="Export every n epochs")
+    parser.add_argument("--save_epochs", default=1000, type=int, help="Export every n epochs")
     parser.add_argument("--seed", default=42, type=int, help="Seed")
 
 

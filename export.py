@@ -17,7 +17,7 @@ def main():
     embeds = model["embeddings.embeds"]
 
     if args.matplot == 1:
-        plot(embeds, args)
+        plot(id2node, embeds, args)
         return
 
     meta, coords = [], []
@@ -40,13 +40,20 @@ def write_file(path, data):
         f.write("\n".join(data))
 
 
-def plot(embeds, args):
+def plot(id2nodes, embeds, args):
+    import matplotlib
+    matplotlib.use("Agg")
     import matplotlib.pyplot as plt
+    import networkx as nx
+    g = nx.Graph()
+    g.add_nodes_from(list(id2nodes.values()))
 
-    x = embeds[:, 0].numpy()
-    y = embeds[:, 1].numpy()
+    pos = {}
+    for idx, node in id2nodes.items():
+        pos[node] = embeds[idx].numpy()
 
-    plt.scatter(x, y)
+    fig = plt.figure()
+    nx.draw(g, pos, ax=fig.add_subplot(111), node_size=5, with_labels=True)
 
     model_name = args.load_model.split("/")[-1]
     plt.savefig(config.PLOT_EXPORT_PATH / f"{model_name}.png")
