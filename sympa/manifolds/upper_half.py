@@ -1,6 +1,5 @@
-from typing import Union, Tuple, Optional
 import torch
-from geoopt.manifolds.base import Manifold, ScalingInfo
+from geoopt.manifolds.base import Manifold
 from sympa.manifolds import SymmetricManifold
 from sympa.manifolds import symmetric_math as smath
 
@@ -25,20 +24,20 @@ class UpperHalfManifold(SymmetricManifold):
     def r_metric(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         """
         R metric for the Upper half space model:
-        Given z1, z2 in H_n, R: S_n x S_n -> Mat(n, C)
+        Given z1, z2 in H_n, R: H_n x H_n -> Mat(n, C)
             R(z1, z2) = (z1 - z2) (z1 - ẑ2)^-1 (ẑ1 - ẑ2) (ẑ1 - z2)^-1
         """
-        x_conj = smath.sym_conjugate(x)
-        y_conj = smath.sym_conjugate(y)
+        x_conj = smath.conjugate(x)
+        y_conj = smath.conjugate(y)
 
-        term_a = smath.sym_sub(x, y)
-        term_b = smath.sym_inverse(smath.sym_sub(x, y_conj))
-        term_c = smath.sym_sub(x_conj, y_conj)
-        term_d = smath.sym_inverse(smath.sym_sub(x_conj, y))
+        term_a = smath.subtract(x, y)
+        term_b = smath.inverse(smath.subtract(x, y_conj))
+        term_c = smath.subtract(x_conj, y_conj)
+        term_d = smath.inverse(smath.subtract(x_conj, y))
 
-        res = smath.sym_bmm(term_a, term_b)
-        res = smath.sym_bmm(res, term_c)
-        res = smath.sym_bmm(res, term_d)
+        res = smath.bmm(term_a, term_b)
+        res = smath.bmm(res, term_c)
+        res = smath.bmm(res, term_d)
         return res
 
     def egrad2rgrad(self, x: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
@@ -76,26 +75,26 @@ class UpperHalfManifold(SymmetricManifold):
 
         In this space, we need to ensure that Y = Im(X) is positive definite.
         Since the matrix Y is symmetric, it is possible to diagonalize it.
-        For a diagonal matrix the condition is just that both diagonal entries are positive, so we clamp the values
-        that are <=0 in the diagonal, and then restore the matrix back into non-diagonal form using the base change
-        matrix that one obtained from the diagonalization.
+        For a diagonal matrix the condition is just that all diagonal entries are positive, so we clamp the values
+        that are <=0 in the diagonal to an epsilon, and then restore the matrix back into non-diagonal form using
+        the base change matrix that was obtained from the diagonalization.
 
         Steps to project: Y = Im(x)
         1) Y = SDS^-1
-        2) D_tilde = clamp(D, min=0)
+        2) D_tilde = clamp(D, min=epsilon)
         3) Y_tilde = SD_tildeS^-1
         """
         y = smath.imag(x)
-        y_tilde = smath.sym_conjugate_projection(y)
+        y_tilde = smath.positive_conjugate_projection(y)
         return smath.stick(smath.real(x), y_tilde)
 
 
 def get_conjugate_of_r(x: torch.Tensor, y: torch.Tensor):
     """A = (ẑ1 - z2)(ẑ1 - ẑ2) ^ {-1}."""
-    x_conj = smath.sym_conjugate(x)
-    y_conj = smath.sym_conjugate(y)
-    term_a = smath.sym_sub(x_conj, y)
-    term_b = smath.sym_inverse(smath.sym_sub(x_conj, y_conj))
+    x_conj = smath.conjugate(x)
+    y_conj = smath.conjugate(y)
+    term_a = smath.subtract(x_conj, y)
+    term_b = smath.inverse(smath.subtract(x_conj, y_conj))
 
-    res = smath.sym_bmm(term_a, term_b)
+    res = smath.bmm(term_a, term_b)
     return res
