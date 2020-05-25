@@ -8,7 +8,7 @@
 # n: dimensions of the matrix
 
 import torch
-from geoopt.manifolds.poincare.math import artanh
+from geoopt.manifolds.stereographic.math import artanh
 EPS = {torch.float32: 4e-3, torch.float64: 1e-5}
 
 
