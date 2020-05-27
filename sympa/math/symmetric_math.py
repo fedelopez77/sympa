@@ -46,6 +46,15 @@ def conjugate(z: torch.Tensor):
     return stick(real(z), -imag(z))
 
 
+def transpose(z: torch.Tensor):
+    return z.transpose(-1, -2)
+
+
+def conj_trans(z: torch.Tensor):
+    """Conjugate transpose of z"""
+    return transpose(conjugate(z))
+
+
 def sym_abs(z: torch.Tensor):
     """Absolute value of z"""
     return torch.sqrt(real(z) ** 2 + imag(z) ** 2)

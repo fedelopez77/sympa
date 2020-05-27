@@ -1,7 +1,7 @@
 import torch
 from geoopt.manifolds.base import Manifold
 from sympa.manifolds import SymmetricManifold
-from sympa.manifolds import symmetric_math as smath
+from sympa.math import symmetric_math as smath
 
 
 class UpperHalfManifold(SymmetricManifold):

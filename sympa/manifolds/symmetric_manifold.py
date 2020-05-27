@@ -2,7 +2,6 @@ from abc import ABC
 from typing import Union, Tuple, Optional
 import torch
 from geoopt.manifolds.base import Manifold
-from sympa.manifolds import symmetric_math as smath
 
 
 class SymmetricManifold(Manifold, ABC):

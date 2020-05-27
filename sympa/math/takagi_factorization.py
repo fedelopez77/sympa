@@ -1,20 +1,6 @@
 
 import torch
-import sympa.manifolds.symmetric_math as smath
-
-
-def s_transpose_a_s_equals_diag(s, a, diag):
-    """
-    :param s, a: b x 2 x n x n
-    :param diag: b x n x n
-    :return:
-    """
-    s_transpose_a = smath.bmm(s.transpose(-1, -2), a)
-    s_transpose_a_s = smath.bmm(s_transpose_a, s)           # b x 2 x n x n
-
-    full_diag = smath.stick(diag, torch.zeros_like(diag))   # b x 2 x n x n
-
-    return torch.allclose(s_transpose_a_s, full_diag)
+import sympa.math.symmetric_math as smath
 
 
 def takagi_factorization(a: torch.Tensor):
@@ -142,3 +128,16 @@ def _get_z3(b: torch.Tensor):
 
     return z3
 
+
+def s_transpose_a_s_equals_diag(s, a, diag):
+    """
+    :param s, a: b x 2 x n x n
+    :param diag: b x n x n
+    :return:
+    """
+    s_transpose_a = smath.bmm(s.transpose(-1, -2), a)
+    s_transpose_a_s = smath.bmm(s_transpose_a, s)           # b x 2 x n x n
+
+    full_diag = smath.stick(diag, torch.zeros_like(diag))   # b x 2 x n x n
+
+    return torch.allclose(s_transpose_a_s, full_diag)

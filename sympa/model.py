@@ -4,8 +4,7 @@ from sympa.utils import get_logging
 from sympa import config
 import geoopt as gt
 from sympa.manifolds import BoundedDomainManifold, UpperHalfManifold
-from sympa.manifolds import symmetric_math as smath
-
+from sympa.math import symmetric_math as smath
 
 log = get_logging()
 
