@@ -52,7 +52,7 @@ def _get_z1(a: torch.Tensor):
     :param a: b x 2 x n x n
     :return z1: b x 2 x n x n, eigenvalues: b x n
     """
-    a_star = smath.conjugate(a).transpose(-1, -2)
+    a_star = smath.conj_trans(a)
     a_star_a = smath.bmm(a_star, a)
     a_star_a_2n = smath.to_compound_real_symmetric_from_hermitian(a_star_a)
 
@@ -83,7 +83,7 @@ def _get_z2(a: torch.Tensor, z1: torch.Tensor):
     :return: z2: b x 2 x n x n, b: b x 2 x n x n
     """
     # build W
-    w = smath.bmm(z1.transpose(-1, -2), a)
+    w = smath.bmm(smath.transpose(z1), a)
     w = smath.bmm(w, z1)                                        # b x 2 x n x n
 
     real_w = smath.real(w)                                      # b x n x n
@@ -135,7 +135,7 @@ def s_transpose_a_s_equals_diag(s, a, diag):
     :param diag: b x n x n
     :return:
     """
-    s_transpose_a = smath.bmm(s.transpose(-1, -2), a)
+    s_transpose_a = smath.bmm(smath.transpose(s), a)
     s_transpose_a_s = smath.bmm(s_transpose_a, s)           # b x 2 x n x n
 
     full_diag = smath.stick(diag, torch.zeros_like(diag))   # b x 2 x n x n

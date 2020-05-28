@@ -8,7 +8,6 @@
 # n: dimensions of the matrix
 
 import torch
-from geoopt.manifolds.stereographic.math import artanh
 EPS = {torch.float32: 4e-3, torch.float64: 1e-5}
 
 
@@ -75,8 +74,10 @@ def pow(z: torch.Tensor, exponent):
     """
     r = sym_abs(z)
     r = torch.pow(r, exponent)
-    tita = artanh(imag(z) / real(z))
+
+    tita = torch.atan2(imag(z), real(z))
     tita = tita * exponent
+
     real_part = r * torch.cos(tita)
     imag_part = r * torch.sin(tita)
     return stick(real_part, imag_part)
@@ -153,6 +154,8 @@ def inverse(z: torch.Tensor):
         V = - (R * U)
 
     * denotes matrix multiplication
+
+    :param z: b x * x 2 x n x n
     """
     a, c = real(z), imag(z)
     if torch.all(a == 0):
@@ -213,7 +216,7 @@ def identity(dims: int):
     :return: I: 2 x n x n
     """
     real = torch.eye(dims)
-    imag = torch.zeros((dims, dims))
+    imag = torch.zeros_like(real)
     return torch.stack((real, imag))
 
 
@@ -254,7 +257,7 @@ def to_hermitian(x: torch.Tensor):
 
 def to_compound_real_symmetric_from_hermitian(h: torch.Tensor):
     """
-    Let Z = A + iB be a matrix with complex entries, where A,B are n x n matrices with real entries.
+    Let Z = A + iB be a matrix with complex entries, where A, B are n x n matrices with real entries.
     If Z is Hermitian, then a 2n x 2n matrix can be created in the following form:
         M = [(A, -B),
              (B, A)]
