@@ -53,6 +53,7 @@ def main():
     utils.set_seed(42)
 
     # creates storage directory
+    config.CKPT_PATH.mkdir(parents=True, exist_ok=True)
     config.PREP_PATH.mkdir(parents=True, exist_ok=True)
     run_path = config.PREP_PATH / args.run_id
     run_path.mkdir(parents=True, exist_ok=True)
