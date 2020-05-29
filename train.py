@@ -4,7 +4,7 @@ import torch
 from geoopt.optim import RiemannianSGD
 from sympa import config
 from sympa.utils import set_seed, get_logging
-from sympa.Runner import Runner
+from sympa.runner import Runner
 from sympa.model import Model
 
 

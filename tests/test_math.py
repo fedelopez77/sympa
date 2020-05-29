@@ -5,50 +5,15 @@ https://www.symbolab.com/solver/complex-numbers-calculator/
 
 import torch
 import unittest
-import random
-import numpy as np
-
 import sympa.math.symmetric_math as sm
-
-
-def get_random_symmetric_matrices(points: int, dims: int):
-    """Returns 'points' random symmetric matrices of 'dims' x 'dims'"""
-    m = torch.rand(points, 2, dims, dims)
-    return sm.to_symmetric(m)
-
-
-def assert_equal(a: torch.tensor, b: torch.tensor):
-    return torch.eq(a, b).all()
-
-
-def assert_almost_equal(a, b, rtol=1e-05, atol=1e-08):
-    return torch.allclose(a, b, rtol=rtol, atol=atol)
-
-
-def get_matrix_with_positive_eigenvalues():
-    found = False
-    for i in range(1000):
-        m = get_random_symmetric_matrices(1, 2)
-        m = sm.to_hermitian(m)
-        sym_matrix = sm.to_compound_real_symmetric_from_hermitian(m)
-        eigvalues, eigvectors = sm.symeig(sym_matrix)
-        if torch.all(eigvalues > 0):
-            print(m)
-            found = True
-
-    if not found:
-        print("It couldn't find any matrix :(")
+from sympa.utils import set_seed
+from tests.utils import get_random_symmetric_matrices, assert_equal, assert_almost_equal
 
 
 class TestBasicMath(unittest.TestCase):
 
     def setUp(self):
-        seed = 42
-        random.seed(seed)
-        np.random.seed(seed)
-        torch.manual_seed(seed)
-        if torch.cuda.is_available():
-            torch.cuda.manual_seed_all(seed)
+        set_seed(42)
 
     def test_to_symmetric(self):
         x = get_random_symmetric_matrices(10, 4)
@@ -282,6 +247,24 @@ class TestBasicMath(unittest.TestCase):
         expected = sm.stick(expected_real, expected_imag)
 
         result = sm.inverse(x)
+
+        self.assertTrue(assert_almost_equal(expected, result))
+
+    def test_positive_conjugate_projection_with_positive_eigenvalues(self):
+        x = torch.Tensor([[[0.9408, 0.1332],
+                           [0.1332, 0.5936]]])
+
+        result = sm.positive_conjugate_projection(x)
+
+        self.assertTrue(assert_almost_equal(x, result))
+
+    def test_positive_conjugate_projection_with_negative_eigenvalues(self):
+        x = torch.Tensor([[[6, 5],
+                           [5, 3]]])
+        expected = torch.Tensor([[[6.2580, 4.6532],
+                                  [4.6532, 3.4661]]])
+
+        result = sm.positive_conjugate_projection(x)
 
         self.assertTrue(assert_almost_equal(expected, result))
 

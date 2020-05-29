@@ -31,6 +31,7 @@ class ComplexEmbeddings(Embeddings):
         super().__init__(num_embeddings, embedding_dim, manifold, _embeds)
         with torch.no_grad():
             self.embeds = smath.to_symmetric(self.embeds)
+            self.embeds = self.manifold.projx(self.embeds)
 
 
 class EuclideanEmbeddings(Embeddings):

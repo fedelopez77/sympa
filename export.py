@@ -4,7 +4,7 @@ import sympa.config as config
 
 
 def main():
-    parser = argparse.ArgumentParser(description="preprocess.py")
+    parser = argparse.ArgumentParser(description="export.py")
     parser.add_argument("--load_model", required=True, help="Path to model to load")
     parser.add_argument("--matplot", default=1, type=int,
                         help="If matplot=1 it exports a matplot image. If not, it exports the coords and metadata to"
