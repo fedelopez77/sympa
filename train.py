@@ -28,12 +28,12 @@ def config_parser(parser):
     parser.add_argument("--grad_accum_steps", default=1, type=int,
                         help="Number of update steps to acum before backward.")
     # Others
-    parser.add_argument("--save_epochs", default=1000, type=int, help="Export every n epochs")
+    parser.add_argument("--save_epochs", default=1001, type=int, help="Export every n epochs")
     parser.add_argument("--seed", default=42, type=int, help="Seed")
 
 
-def get_model(args, distances):
-    model = Model(args, distances)
+def get_model(args):
+    model = Model(args)
     # TODO: load model if necessary
     model.to(config.DEVICE)
     return model
@@ -59,7 +59,7 @@ def main():
     distances = data["distances"]
 
     args.num_points = len(id2node)
-    model = get_model(args, distances)
+    model = get_model(args)
     optimizer = RiemannianSGD(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay, stabilize=10)
     scheduler = get_scheduler(optimizer, args)
 
@@ -68,7 +68,7 @@ def main():
     log.info(f"Points: {args.num_points}, dims: {args.dims}, number of parameters: {n_params}")
     log.info(model)
 
-    runner = Runner(model, optimizer, scheduler=scheduler, id2node=id2node, args=args)
+    runner = Runner(model, optimizer, scheduler=scheduler, id2node=id2node, distances=distances, args=args)
     runner.run()
     log.info("Done!")
 

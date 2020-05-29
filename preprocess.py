@@ -54,6 +54,7 @@ def main():
 
     # creates storage directory
     config.CKPT_PATH.mkdir(parents=True, exist_ok=True)
+    config.TENSORBOARD_PATH.mkdir(parents=True, exist_ok=True)
     config.PREP_PATH.mkdir(parents=True, exist_ok=True)
     run_path = config.PREP_PATH / args.run_id
     run_path.mkdir(parents=True, exist_ok=True)

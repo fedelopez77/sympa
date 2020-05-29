@@ -42,7 +42,7 @@ class EuclideanEmbeddings(Embeddings):
 
 
 class Model(nn.Module):
-    def __init__(self, args, graph_distances):
+    def __init__(self, args):
         """
         :param args:
         :param graph: tensor of n x n with n = args.num_points with all the distances in the graph
@@ -61,54 +61,35 @@ class Model(nn.Module):
             self.manifold = BoundedDomainManifold()
             self.embeddings = ComplexEmbeddings(args.num_points, args.dims, manifold=self.manifold)
 
-        self.graph_distances = graph_distances
-
     def forward(self, input_index):
         """
-        :param input_index: tensor with indexes to process
-        :return: loss
+        :param input_index: tensor with indexes to process: b
+        :return: src and dst indexes. Src and dst embeddings
         """
-        src, dst = self.get_src_and_dst_from_seq(input_index)
-        manifold_distances = self.distance(src, dst)
-        graph_distances = self.graph_distances[src, dst]
+        src_index, dst_index = self.get_src_and_dst_from_seq(input_index)
+        src_embeds = self.embeddings(src_index)                       # b x 2 x n x n or b x n
+        dst_embeds = self.embeddings(dst_index)                       # b x 2 x n x n
 
-        loss = torch.pow(manifold_distances / graph_distances, 2)
-        loss = torch.abs(loss - 1)
-        loss = loss.sum()
+        return src_index, dst_index, src_embeds, dst_embeds
 
-        return loss
-
-    def distance(self, src, dst):
+    def distance(self, src_embeds, dst_embeds):
         """
-        :param src, dst: tensors of len b with ids of src and dst points to calculate distances
+        :param src_embeds, dst_embeds: embeddings of nodes in the manifold.
+        In symmetric spaces, it will be of the shape b x 2 x n x n. In Euclidean space it will be b x n
         :return: tensor of b with distances from each src to each dst
         """
-        src_embeds = self.embeddings(src)                   # b x 2 x n x n
-        dst_embeds = self.embeddings(dst)                   # b x 2 x n x n
-
         return self.manifold.dist(src_embeds, dst_embeds)   # b x 1
-
-    def distortion(self, input_index):
-        """
-        Distortion is computed as:
-            distortion(u,v) = |d_s(u,v) - d_g(u,v)| / d_g(u,v)
-
-        :param input_index: tensor with indexes to process
-        :return: distortion
-        """
-        src, dst = self.get_src_and_dst_from_seq(input_index)
-        manifold_dists = self.distance(src, dst)
-        graph_dists = self.graph_distances[src, dst]
-
-        distortion = torch.abs(manifold_dists - graph_dists) / graph_dists
-
-        return distortion
 
     def get_src_and_dst_from_seq(self, input_index):
         """
         :param input_index: tensor with batch of indexes of points: shape: b
         :return: two tensors of len b * (n - 1) with the pairs src[i], dst[i] at each element i
-        For each point in input_index, it should compute the distance with all other nodes
+
+        For each point in input_index, it should compute the distance with all other nodes "greater" than the point.
+        This is implemented according to the loss equation:
+            1 <= i < j <= n
+        'input_index' is assumed to be i and this function returns the pairs (i, j) for all j > i
+
         Example:
             input_index = [c, a]
             all_points = [a, b, c, d]

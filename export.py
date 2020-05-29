@@ -10,6 +10,7 @@ def main():
                         help="If matplot=1 it exports a matplot image. If not, it exports the coords and metadata to"
                              "be plot in projector.tensorflow.org")
 
+    config.PLOT_EXPORT_PATH.mkdir(parents=True, exist_ok=True)
     args = parser.parse_args()
     data = torch.load(args.load_model)
 

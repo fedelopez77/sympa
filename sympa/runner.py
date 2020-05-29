@@ -7,13 +7,15 @@ from tensorboardX import SummaryWriter
 from statistics import mean
 from tqdm import tqdm, trange
 from sympa import config
+from sympa.losses import AverageDistortionLoss
+from sympa.metrics import AverageDistortionMetric
 from sympa.utils import get_logging
 
 log = get_logging()
 
 
 class Runner(object):
-    def __init__(self, model, optimizer, scheduler, id2node, args):
+    def __init__(self, model, optimizer, scheduler, id2node, distances, args):
         self.model = model
         self.optimizer = optimizer
         self.scheduler = scheduler
@@ -21,6 +23,9 @@ class Runner(object):
         point_ids = TensorDataset(torch.arange(0, len(self.id2node), dtype=torch.long))
         self.train = DataLoader(point_ids, sampler=RandomSampler(point_ids), batch_size=args.batch_size)
         self.validate = DataLoader(point_ids, sampler=SequentialSampler(point_ids), batch_size=args.batch_size)
+        self.loss = AverageDistortionLoss(distances)
+        self.metric = AverageDistortionMetric(distances)
+
         self.args = args
         self.writer = SummaryWriter(config.TENSORBOARD_PATH / args.run_id)
 
@@ -66,7 +71,9 @@ class Runner(object):
         for step, batch in enumerate(tqdm(train_split, desc=f"epoch_{epoch_num}")):
             batch_points = batch[0].to(config.DEVICE)
 
-            loss = self.model(batch_points)
+            src_index, dst_index, src_embeds, dst_embeds = self.model(batch_points)
+
+            loss = self.loss.calculate_loss(src_index, dst_index, src_embeds, dst_embeds, self.model.distance)
             loss = loss / self.args.grad_accum_steps
             loss.backward()
 
@@ -92,7 +99,9 @@ class Runner(object):
         for batch in tqdm(eval_split, desc="Evaluating"):
             batch_points = batch[0].to(config.DEVICE)
             with torch.no_grad():
-                distortion = self.model.distortion(batch_points)
+                src_index, dst_index, src_embeds, dst_embeds = self.model(batch_points)
+                distortion = self.metric.calculate_metric(src_index, dst_index, src_embeds, dst_embeds,
+                                                          self.model.distance)
             total_distortion.extend(distortion.tolist())
 
         avg_distortion = mean(total_distortion)
