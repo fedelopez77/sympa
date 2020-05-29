@@ -101,6 +101,12 @@ def bmm(x: torch.Tensor, y: torch.Tensor):
     return stick(out_real, out_imag)
 
 
+def bmm3(x: torch.Tensor, y: torch.Tensor, z: torch.Tensor):
+    """A = X Y Z"""
+    xy = bmm(x, y)
+    return bmm(xy, z)
+
+
 def to_symmetric(y: torch.Tensor):
     """
     Copies the values on the upper triangular to the lower triangular in order to make it symmetric
@@ -284,8 +290,8 @@ def to_hermitian_from_compound_real_symmetric(m: torch.Tensor):
     :param m: b x * x 2n x 2n
     :return: z: b x * x 2 x n x n
     """
-    a_on_top_of_b = torch.split(m, 2, dim=-1)[0]
-    a, b = torch.split(a_on_top_of_b, 2, dim=-2)
+    a_on_top_of_b = torch.chunk(m, 2, dim=-1)[0]
+    a, b = torch.chunk(a_on_top_of_b, 2, dim=-2)
     return stick(a, b)
 
 
