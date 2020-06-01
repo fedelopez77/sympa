@@ -304,7 +304,7 @@ class TestBasicMath(unittest.TestCase):
 
         self.assertTrue(assert_equal(expected, result))
 
-    def test_to_hermitian_from_compound_real_symmetric(self):
+    def test_to_hermitian_from_compound_real_symmetric_2d(self):
         x = torch.Tensor([[[ 1, -3,  0, -5],
                            [-3,  7,  5,  0],
                            [ 0,  5,  1, -3],
@@ -319,6 +319,27 @@ class TestBasicMath(unittest.TestCase):
         result = sm.to_hermitian_from_compound_real_symmetric(x)
 
         self.assertTrue(assert_equal(expected, result))
+
+    def test_to_hermitian_from_compound_real_symmetric_3d(self):
+        x = torch.Tensor([[[ 1, -3,  5,  0, -5,  3],
+                           [-3,  7, -2, -5,  0,  4],
+                           [ 5, -2,  4,  3, -4,  0],
+                           [ 0,  5, -3,  1, -3,  5],
+                           [-5,  0,  4, -3,  7, -2],
+                           [ 3, -4,  0,  5, -2,  4]]])
+
+        expected_real = torch.Tensor([[[ 1, -3,  5],
+                                       [-3,  7, -2],
+                                       [ 5, -2,  4]]])
+        expected_imag = torch.Tensor([[[ 0,  5, -3],
+                                       [-5,  0,  4],
+                                       [ 3, -4,  0]]])
+        expected = sm.stick(expected_real, expected_imag)
+
+        result = sm.to_hermitian_from_compound_real_symmetric(x)
+
+        self.assertTrue(assert_equal(expected, result))
+
 
     def test_hermitian_eig(self):
         # expected result from https://www.arndt-bruenner.de/mathe/scripts/engl_eigenwert2.htm

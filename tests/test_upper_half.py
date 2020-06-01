@@ -24,9 +24,7 @@ class TestUpperHalfManifold(unittest.TestCase):
         a = sm.bmm(term_a, term_b)
         r = self.manifold.r_metric(x, y)
 
-        a_inverse = sm.inverse(a)
-        a_inverse_r_a = sm.bmm(a_inverse, r)
-        a_inverse_r_a = sm.bmm(a_inverse_r_a, a)
+        a_inverse_r_a = sm.bmm3(sm.inverse(a), r, a)
         conj_r = sm.conjugate(r)
 
         self.assertTrue(assert_almost_equal(conj_r, a_inverse_r_a, rtol=1e-05, atol=1e-05))
