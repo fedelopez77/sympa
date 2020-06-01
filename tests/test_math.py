@@ -188,6 +188,35 @@ class TestBasicMath(unittest.TestCase):
 
         self.assertTrue(assert_almost_equal(expected, result))
 
+    def test_bmm3(self):
+        x_real = torch.Tensor([[[1, -3],
+                                [5, -7]]])
+        x_imag = torch.Tensor([[[9, -11],
+                                [-14, 15]]])
+        x = sm.stick(x_real, x_imag)
+
+        y_real = torch.Tensor([[[9, -11],
+                                [-14, 15]]])
+        y_imag = torch.Tensor([[[1, -3],
+                                [5, -7]]])
+        y = sm.stick(y_real, y_imag)
+
+        z_real = torch.Tensor([[[-3, -1],
+                                [-2, 5]]])
+        z_imag = torch.Tensor([[[-1, 3],
+                                [0, -2]]])
+        z = sm.stick(z_real, z_imag)
+
+        expected_real = torch.Tensor([[[142, -1782],
+                                       [-418, 1357]]])
+        expected_imag = torch.Tensor([[[-268, -948],
+                                       [190, 2871]]])
+        expected = sm.stick(expected_real, expected_imag)
+
+        result = sm.bmm3(x, y, z)
+
+        self.assertTrue(assert_almost_equal(expected, result))
+
     def test_inverse_symmetric_2d(self):
         # expected result from https://adrianstoll.com/linear-algebra/matrix-inversion.html
         x_real = torch.Tensor([[[1, -3],
