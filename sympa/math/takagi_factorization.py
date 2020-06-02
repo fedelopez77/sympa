@@ -68,7 +68,7 @@ def _get_z1(a: torch.Tensor):
     z1 = sm.to_hermitian_from_compound_real_symmetric(eigenvectors)
 
     # asserts: A^* A = Z1^* D Z1
-    assert torch.allclose(a_star_a, sm.bmm3(sm.conj_trans(z1), diagonal, z1), rtol=1e-05, atol=1e-06)
+    assert torch.allclose(a_star_a, sm.bmm3(sm.conj_trans(z1), diagonal, z1), rtol=1e-05, atol=a_star_a.max() / 1e7)
 
     return z1, z_eigenvalues, diagonal
 
@@ -123,7 +123,7 @@ def _get_z2(a: torch.Tensor, z1: torch.Tensor):
     :return: z2: b x 2 x n x n, b: b x 2 x n x n
     """
     # build W
-    w = sm.bmm3(sm.transpose(z1), a, z1)                                    # b x 2 x n x n
+    w = sm.bmm3(z1, a, sm.transpose(z1))                                    # b x 2 x n x n
 
     real_w = sm.real(w)                                                     # b x n x n
     assert torch.allclose(real_w, real_w.transpose(-1, -2))                 # assert Re(W) is symmetric

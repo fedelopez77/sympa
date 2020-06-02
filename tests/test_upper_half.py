@@ -2,14 +2,14 @@ import torch
 import unittest
 from sympa.manifolds import UpperHalfManifold
 import sympa.math.symmetric_math as sm
-from sympa.utils import set_seed
-from tests.utils import get_random_symmetric_matrices, assert_equal, assert_almost_equal
+import sympa.tests
+from tests.utils import get_random_symmetric_matrices
 
 
-class TestUpperHalfManifold(unittest.TestCase):
+class TestUpperHalfManifold(sympa.tests.TestCase):
 
     def setUp(self):
-        set_seed(42)
+        super().setUp()
         self.manifold = UpperHalfManifold()
 
     def test_overline_r_equals_a_inverse_r_a(self):
@@ -27,7 +27,7 @@ class TestUpperHalfManifold(unittest.TestCase):
         a_inverse_r_a = sm.bmm3(sm.inverse(a), r, a)
         conj_r = sm.conjugate(r)
 
-        self.assertTrue(assert_almost_equal(conj_r, a_inverse_r_a, rtol=1e-05, atol=1e-05))
+        self.assertAllClose(conj_r, a_inverse_r_a, rtol=1e-05, atol=1e-05)
 
 
 if __name__ == '__main__':
