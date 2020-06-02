@@ -8,6 +8,7 @@
 # n: dimensions of the matrix
 
 import torch
+from geoopt.linalg.batch_linalg import sym as _to_symmetric
 EPS = {torch.float32: 4e-3, torch.float64: 1e-5}
 
 
@@ -115,20 +116,6 @@ def to_symmetric(y: torch.Tensor):
     real_sym = _to_symmetric(real(y))
     imag_sym = _to_symmetric(imag(y))
     return stick(real_sym, imag_sym)
-
-
-def _to_symmetric(y: torch.Tensor):
-    """
-    Copies the values on the upper triangular to the lower triangular in order to make it symmetric
-
-    Alternative: M + M.transpose() is always symmetric
-
-    :param y: b x * x n x n
-    """
-    # takes the upper triangular and transpose it
-    lower_triangular = torch.triu(y, diagonal=1).transpose(-2, -1)
-    upper_triangular = torch.triu(y)
-    return lower_triangular + upper_triangular
 
 
 def repr(z: torch.Tensor):

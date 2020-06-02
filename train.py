@@ -16,7 +16,8 @@ def config_parser(parser):
     parser.add_argument("--data", required=True, type=str, help="Name of prep folder")
     parser.add_argument("--run_id", required=True, type=str, help="Name of model/run to export")
     # Model
-    parser.add_argument("--model", default="euclidean", type=str, help="Model type: 'euclidean', 'upper' or 'bounded'")
+    parser.add_argument("--model", default="euclidean", type=str, help="Model type: 'euclidean', 'poincare', "
+                                                                       "'upper' or 'bounded'")
     parser.add_argument("--dims", default=2, type=int, help="Dimensions for the model.")
     # optim and config
     parser.add_argument("--learning_rate", default=3e-2, type=float, help="Starting learning rate.")

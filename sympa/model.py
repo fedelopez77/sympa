@@ -25,8 +25,11 @@ class Embeddings(nn.Module):
         return self.embeds[input_index]
 
 
-class ComplexEmbeddings(Embeddings):
-    def __init__(self, num_embeddings, embedding_dim, manifold=UpperHalfManifold()):
+class ComplexSymmetricMatrixEmbeddings(Embeddings):
+    def __init__(self, num_embeddings, embedding_dim, manifold):
+        """
+        :param manifold: it should be either UpperHalfManifold or BoundedDomainManifold
+        """
         _embeds = torch.Tensor(num_embeddings, 2, embedding_dim, embedding_dim)
         super().__init__(num_embeddings, embedding_dim, manifold, _embeds)
         with torch.no_grad():
@@ -34,11 +37,12 @@ class ComplexEmbeddings(Embeddings):
             self.embeds = self.manifold.projx(self.embeds)
 
 
-class EuclideanEmbeddings(Embeddings):
-    def __init__(self, num_embeddings, embedding_dim, manifold=None):
-        _manifold = manifold if manifold is not None else gt.manifolds.Euclidean(ndim=1)
+class VectorEmbeddings(Embeddings):
+    def __init__(self, num_embeddings, embedding_dim, manifold):
         _embeds = torch.Tensor(num_embeddings, embedding_dim)
-        super().__init__(num_embeddings, embedding_dim, _manifold, _embeds)
+        super().__init__(num_embeddings, embedding_dim, manifold, _embeds)
+        with torch.no_grad():
+            self.embeds.data = self.manifold.projx(self.embeds)
 
 
 class Model(nn.Module):
@@ -52,14 +56,14 @@ class Model(nn.Module):
         self.num_points = args.num_points
         self.all_points = list(range(self.num_points))
         if args.model == "euclidean":
-            self.embeddings = EuclideanEmbeddings(args.num_points, args.dims)
-            self.manifold = self.embeddings.manifold
+            self.embeddings = VectorEmbeddings(args.num_points, args.dims, manifold=gt.Euclidean(1))
+        if args.model == "poincare":
+            self.embeddings = VectorEmbeddings(args.num_points, args.dims, manifold=gt.PoincareBall())
         elif args.model == "upper":
-            self.manifold = UpperHalfManifold()
-            self.embeddings = ComplexEmbeddings(args.num_points, args.dims, manifold=self.manifold)
+            self.embeddings = ComplexSymmetricMatrixEmbeddings(args.num_points, args.dims, manifold=UpperHalfManifold())
         elif args.model == "bounded":
-            self.manifold = BoundedDomainManifold()
-            self.embeddings = ComplexEmbeddings(args.num_points, args.dims, manifold=self.manifold)
+            self.embeddings = ComplexSymmetricMatrixEmbeddings(args.num_points, args.dims, manifold=BoundedDomainManifold())
+        self.manifold = self.embeddings.manifold
 
     def forward(self, input_index):
         """
