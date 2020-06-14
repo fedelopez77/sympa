@@ -3,6 +3,7 @@ import torch
 import numpy as np
 import logging
 import sys
+from sympa.config import EPS
 
 
 def set_seed(seed):
@@ -38,3 +39,7 @@ def row_sort(x, indexes):
         indexes.flatten()
     ].view(d1, d2)
     return ret
+
+
+def assert_all_close(a, b, factor=1):
+    return torch.all((a - b).abs() < EPS[a.dtype] * factor)

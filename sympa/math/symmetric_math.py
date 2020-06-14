@@ -8,8 +8,8 @@
 # n: dimensions of the matrix
 
 import torch
+from sympa.config import EPS
 from geoopt.linalg.batch_linalg import sym as _to_symmetric
-EPS = {torch.float32: 4e-3, torch.float64: 1e-5}
 
 
 def real(z: torch.Tensor):

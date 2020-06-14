@@ -1,7 +1,7 @@
 
 import torch
 import sympa.math.symmetric_math as sm
-from sympa.utils import row_sort
+from sympa.utils import row_sort, assert_all_close
 
 
 def takagi_factorization(a: torch.Tensor):
@@ -20,17 +20,17 @@ def takagi_factorization(a: torch.Tensor):
     """
     # z1, D
     z1, eigenvalues, diagonal = _get_z1(a)          # z1: b x 2 x n x n, evalues: b x n, diagonal: b x 2 x n x n
+    diagonal = sm.pow(diagonal, 0.5)
+    eigenvalues = eigenvalues ** 0.5
 
-    z2, b = _get_z2(a, z1)                          # z2, b: b x 2 x n x n. Im(z2) == 0
+    z2, b = _get_z2(a, z1)                          # z2, b: b x 2 x n x n
 
-    # assert that d_i = |b_i|^2
-    assert torch.allclose(sm.sym_abs(diagonal), sm.sym_abs(b)**2)
+    # assert that d_i = |b_i|
+    assert assert_all_close(sm.sym_abs(diagonal), sm.sym_abs(b))
 
     z3 = _get_z3(b)
 
-    s = sm.bmm3(sm.conj_trans(z1), z2, z3)             # S = Z1 Z2 Z3
-    diagonal = sm.pow(diagonal, 0.5)
-    eigenvalues = eigenvalues**0.5
+    s = sm.bmm3(sm.conj_trans(z1), z2, z3)             # S = Z1^* Z2 Z3
 
     assert s_transpose_a_s_equals_diag(s, a, diagonal)
 
@@ -72,7 +72,7 @@ def _get_z1(a: torch.Tensor):
     z1 = sm.to_hermitian_from_compound_real_symmetric(eigenvectors)
 
     # asserts: A^* A = Z1^* D Z1
-    assert torch.allclose(a_star_a, sm.bmm3(sm.conj_trans(z1), diagonal, z1), rtol=1e-05, atol=a_star_a.max() / 1e7)
+    assert assert_all_close(a_star_a, sm.bmm3(sm.conj_trans(z1), diagonal, z1))
 
     return z1, z_eigenvalues, diagonal
 
@@ -98,7 +98,7 @@ def reorder_eigenvectors(eigenvectors, desc_indices):
             if torch.allclose(elem_a, elem_b, rtol=1e-05, atol=1e-06):
                 left.append(vecs[i])
                 right.append(vecs[i + 1])
-            elif torch.allclose(elem_a, elem_b * -1):   # in this case, it swaps the eigenvectors
+            elif torch.allclose(elem_a, elem_b * -1, rtol=1e-05, atol=1e-06):  # in this case, it swaps the eigenvectors
                 left.append(vecs[i + 1])
                 right.append(vecs[i])
             else:
@@ -129,7 +129,7 @@ def _get_z2(a: torch.Tensor, z1: torch.Tensor):
     w = sm.bmm3(sm.conjugate(z1), a, sm.conj_trans(z1))                                    # b x 2 x n x n
 
     real_w = sm.real(w)                                                     # b x n x n
-    assert torch.allclose(real_w, real_w.transpose(-1, -2), rtol=1e-05, atol=real_w.abs().max() / 1e7)  # assert Re(W) is symmetric
+    assert assert_all_close(real_w, real_w.transpose(-1, -2))  # assert Re(W) is symmetric
 
     # diagonalize Re(W)
     real_b, real_z2 = torch.symeig(real_w, eigenvectors=True)               # real_b: b x n, z2: b x n x n
@@ -139,8 +139,7 @@ def _get_z2(a: torch.Tensor, z1: torch.Tensor):
     assert torch.allclose(torch.sum(real_z2[:, :, -2] * real_z2[:, :, -1]), torch.Tensor(0))
 
     # build Im(B) = Z2^T Im(W) Z2
-    imag_b = torch.bmm(real_z2.transpose(-1, -2), sm.imag(w))
-    imag_b = torch.bmm(imag_b, real_z2)                       # b x n x n
+    imag_b = real_z2.transpose(-1, -2).bmm(sm.imag(w)).bmm(real_z2)     # b x n x n
 
     # assert that imag_b is diagonal
     assert torch.allclose(imag_b.norm(), torch.diagonal(imag_b, dim1=-2, dim2=-1).norm())
@@ -213,7 +212,7 @@ def _get_z3(b: torch.Tensor):
     # asserts Z3 B Z3 is real
     z3_b_z3 = sm.bmm3(z3, b, z3)
     z3_b_z3_imag = sm.imag(z3_b_z3)
-    assert torch.allclose(z3_b_z3_imag, torch.zeros_like(z3_b_z3_imag), rtol=1e-05, atol=z3_b_z3.abs().max() / 1e6)
+    assert torch.all(z3_b_z3_imag < sm.EPS[z3.dtype])
 
     return z3
 
@@ -224,4 +223,4 @@ def s_transpose_a_s_equals_diag(s, a, diagonal):
     :param s, a, diagonal: b x 2 x n x n
     """
     s_transpose_a_s = sm.bmm3(sm.transpose(s), a, s)
-    return torch.allclose(s_transpose_a_s, diagonal, rtol=1e-05, atol=diagonal.max() / 1e6)
+    return assert_all_close(s_transpose_a_s, diagonal)
