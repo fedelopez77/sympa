@@ -1,11 +1,12 @@
 
 import torch
 import sympa.math.symmetric_math as sm
+from sympa.utils import row_sort
 
 
 def takagi_factorization(a: torch.Tensor):
     """
-    Given A ('a') is a square, complex, symmetric matrix.
+    Given A ('a') square, complex, symmetric matrix.
     Calculates factorization A = SDS^T
      - D is a real nonnegative diagonal matrix
      - S is unitary
@@ -18,16 +19,18 @@ def takagi_factorization(a: torch.Tensor):
     :return: eigenvalues: b x n, eigenvectors: b x 2 x n x n
     """
     # z1, D
-    z1, eigenvalues, diagonal = _get_z1(a)            # z1: b x 2 x n x n, evalues: b x n, diagonal: b x 2 x n x n
+    z1, eigenvalues, diagonal = _get_z1(a)          # z1: b x 2 x n x n, evalues: b x n, diagonal: b x 2 x n x n
 
-    z2, b = _get_z2(a, z1)                  # z2, b: b x 2 x n x n. Im(z2) == 0
+    z2, b = _get_z2(a, z1)                          # z2, b: b x 2 x n x n. Im(z2) == 0
 
-    # assert that d_i = |b_i|
-    assert torch.allclose(torch.diag_embed(eigenvalues), sm.sym_abs(b))
+    # assert that d_i = |b_i|^2
+    assert torch.allclose(sm.sym_abs(diagonal), sm.sym_abs(b)**2)
 
     z3 = _get_z3(b)
 
-    s = sm.bmm3(z1, z2, z3)             # S = Z1 Z2 Z3
+    s = sm.bmm3(sm.conj_trans(z1), z2, z3)             # S = Z1 Z2 Z3
+    diagonal = sm.pow(diagonal, 0.5)
+    eigenvalues = eigenvalues**0.5
 
     assert s_transpose_a_s_equals_diag(s, a, diagonal)
 
@@ -40,8 +43,8 @@ def _get_z1(a: torch.Tensor):
     Z1 (and D): A^* A = Z1^* D Z1
     1 - Build A^* A
     2 - Build [A^* A]: real symmetric
-    3 - Diagonalize [A^* A] = [Z1] [D] [Z1]^T
-    4 - From [Z1], obtain Z1
+    3 - Diagonalize [A^* A] = [S] [D] [S]^T
+    4 - From [S], obtain Z1: [S]^T = [Z1]
          From [D], obtain D
     Check: Z1 is unitary
 
@@ -65,6 +68,7 @@ def _get_z1(a: torch.Tensor):
 
     # reorders eigenvectors due to repetitions
     eigenvectors = reorder_eigenvectors(eigenvectors, desc_indices)
+    eigenvectors = eigenvectors.transpose(-1, -2)
     z1 = sm.to_hermitian_from_compound_real_symmetric(eigenvectors)
 
     # asserts: A^* A = Z1^* D Z1
@@ -91,7 +95,7 @@ def reorder_eigenvectors(eigenvectors, desc_indices):
         for i in range(0, len(vecs), 2):
             elem_a = vecs[i][0]
             elem_b = vecs[i + 1][half_elem]
-            if torch.allclose(elem_a, elem_b):
+            if torch.allclose(elem_a, elem_b, rtol=1e-05, atol=1e-06):
                 left.append(vecs[i])
                 right.append(vecs[i + 1])
             elif torch.allclose(elem_a, elem_b * -1):   # in this case, it swaps the eigenvectors
@@ -105,13 +109,12 @@ def reorder_eigenvectors(eigenvectors, desc_indices):
         result.append(reordered)
 
     result = torch.stack(result, dim=0)
-    result = result.transpose(-1, -2)
     return result
 
 
 def _get_z2(a: torch.Tensor, z1: torch.Tensor):
     """
-    1 - Build W = Z1^T A Z1     (Z1 from step 1)
+    1 - Build W = Ẑ1 A Z1^*     (Z1 from step 1)
     The real part of W should be symmetric
     2 - Diagonalize Real part of W: Re(W) = Z2 Re(B) Z2^T
     Check: Z2 is orthogonal
@@ -123,39 +126,67 @@ def _get_z2(a: torch.Tensor, z1: torch.Tensor):
     :return: z2: b x 2 x n x n, b: b x 2 x n x n
     """
     # build W
-    w = sm.bmm3(z1, a, sm.transpose(z1))                                    # b x 2 x n x n
+    w = sm.bmm3(sm.conjugate(z1), a, sm.conj_trans(z1))                                    # b x 2 x n x n
 
     real_w = sm.real(w)                                                     # b x n x n
-    assert torch.allclose(real_w, real_w.transpose(-1, -2))                 # assert Re(W) is symmetric
+    assert torch.allclose(real_w, real_w.transpose(-1, -2), rtol=1e-05, atol=real_w.abs().max() / 1e7)  # assert Re(W) is symmetric
 
     # diagonalize Re(W)
     real_b, real_z2 = torch.symeig(real_w, eigenvectors=True)               # real_b: b x n, z2: b x n x n
-    # sets values and vectors in descending order
-    desc_index = torch.arange(start=real_b.size(-1) - 1, end=-1, step=-1, dtype=torch.long, device=real_b.device)
-    real_b = real_b.index_select(dim=-1, index=desc_index)
-    real_z2 = real_z2.index_select(dim=-1, index=desc_index)
 
     # assert that real_z2 is orthogonal: it checks only on the first and last pairs of tensors for simplicity
     assert torch.allclose(torch.sum(real_z2[:, :, 0] * real_z2[:, :, 1]), torch.Tensor(0))
     assert torch.allclose(torch.sum(real_z2[:, :, -2] * real_z2[:, :, -1]), torch.Tensor(0))
 
-    # build Im(B)
+    # build Im(B) = Z2^T Im(W) Z2
     imag_b = torch.bmm(real_z2.transpose(-1, -2), sm.imag(w))
-    imag_b = torch.bmm(imag_b, real_z2)                                     # b x n x n
+    imag_b = torch.bmm(imag_b, real_z2)                       # b x n x n
 
+    # assert that imag_b is diagonal
+    assert torch.allclose(imag_b.norm(), torch.diagonal(imag_b, dim1=-2, dim2=-1).norm())
 
+    # reorder |B_i|^2 in descending order
+    sorted_b, indexes = set_descending_order_bi_sq(torch.diag_embed(real_b), imag_b)   # b x 2 x n x n; b x n
 
-    # TODO: assert that imag_b is diagonal: torch.allclose(imag_b.norm(), torch.diagonal(imag_b, dim1=1, dim2=2).norm())
-    # THIS IS NOT HAPPENING
-
-
-
+    # reorder z2 according to indices taken from B reordering
+    sorted_real_z2 = reorder_z2(real_z2, indexes)
 
     # stick real and imaginary parts
-    z2 = sm.stick(real_z2, torch.zeros_like(real_z2))
-    b = sm.stick(torch.diag_embed(real_b), imag_b)
+    z2 = sm.stick(sorted_real_z2, torch.zeros_like(real_z2))
 
-    return z2, b
+    return z2, sorted_b
+
+
+def reorder_z2(real_z2, indexes):
+    """
+    Indices contains in each row the index to reorder the columns of real_z2 (batch-wise)
+    :param real_z2: b x n x n 
+    :param indexes: b x n
+    :return: real_z2 with columns sorted according to indexes
+    """
+    result = [i_real_z2.index_select(dim=-1, index=i_index) for i_real_z2, i_index in zip(real_z2, indexes)]
+    sorted_real_z2 = torch.stack(result, dim=0)
+    return sorted_real_z2
+
+
+def set_descending_order_bi_sq(real_b, imag_b):
+    """
+    B = sm.stick(real_b, imag_b). Reorders B such that |B_i|^2 is in descending order.
+    Both real and imag parts are diagonal because B is diagonal
+    :param real_b, imag_b: b x n x n: Pre: they are diagonal matrixes
+    :return: sorted B and indices of reordering
+    """
+    b = sm.stick(real_b, imag_b)
+    sq_mod_b = torch.pow(sm.sym_abs(b), 2)                                          # b x n x n
+    diag_sq_mod_b = torch.diagonal(sq_mod_b, offset=0, dim1=-2, dim2=-1)            # b x n
+    _, indexes = torch.sort(diag_sq_mod_b, dim=-1, descending=True)
+
+    diag_real_b = torch.diagonal(real_b, offset=0, dim1=-2, dim2=-1)
+    diag_imag_b = torch.diagonal(imag_b, offset=0, dim1=-2, dim2=-1)
+    sorted_diag_real_b = row_sort(diag_real_b, indexes)
+    sorted_diag_imag_b = row_sort(diag_imag_b, indexes)
+    sorted_b = sm.stick(torch.diag_embed(sorted_diag_real_b), torch.diag_embed(sorted_diag_imag_b))
+    return sorted_b, indexes
 
 
 def _get_z3(b: torch.Tensor):
@@ -167,25 +198,30 @@ def _get_z3(b: torch.Tensor):
     :param b: b x 2 x n x n
     :return: z3: b x 2 x n x n
     """
-    mod_b = sm.sym_abs(b)                                # b x n x n
-
-    # removes zeros because it will be used for division
-    mod_b = torch.where(mod_b != 0, mod_b, torch.ones_like(mod_b))
+    # removes zeros for stability of operations
+    b_no_zeros = torch.where(torch.abs(b) > (sm.EPS[b.dtype] / 100), b, torch.ones_like(b))
+    mod_b = sm.sym_abs(b_no_zeros)                                # b x n x n
     compound_mod_b = sm.stick(mod_b, mod_b)
 
-    z3 = b / compound_mod_b                                 # b x 2 x n x n
+    z3 = b_no_zeros / compound_mod_b
     z3 = sm.pow(z3, 0.5)
     z3 = sm.pow(z3, -1)
+
+    # builds final z3 using only values from the diagonal
+    z3 = torch.diag_embed(torch.diagonal(z3, offset=0, dim1=-2, dim2=-1))       # b x 2 x n x n
+
+    # asserts Z3 B Z3 is real
+    z3_b_z3 = sm.bmm3(z3, b, z3)
+    z3_b_z3_imag = sm.imag(z3_b_z3)
+    assert torch.allclose(z3_b_z3_imag, torch.zeros_like(z3_b_z3_imag), rtol=1e-05, atol=z3_b_z3.abs().max() / 1e6)
 
     return z3
 
 
 def s_transpose_a_s_equals_diag(s, a, diagonal):
     """
+    Asserts S^T A S == D
     :param s, a, diagonal: b x 2 x n x n
-    :return:
     """
-    s_transpose_a = sm.bmm(sm.transpose(s), a)
-    s_transpose_a_s = sm.bmm(s_transpose_a, s)           # b x 2 x n x n
-
-    return torch.allclose(s_transpose_a_s, diagonal)
+    s_transpose_a_s = sm.bmm3(sm.transpose(s), a, s)
+    return torch.allclose(s_transpose_a_s, diagonal, rtol=1e-05, atol=diagonal.max() / 1e6)

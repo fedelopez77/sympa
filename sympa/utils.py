@@ -23,3 +23,18 @@ def get_logging(level=logging.DEBUG):
     ch.setFormatter(formatter)
     log.addHandler(ch)
     return log
+
+
+def row_sort(x, indexes):
+    """
+    Sorts a 2D tensor according to indices, where indices can have a different order for each row
+    :param X: b x n: a 2D input tensor
+    :param indexes: b x n: a 2D tensor with indices in each row to reorder X
+    :return: X sorted, where the row i of X is sorted according to indexes[i].
+    """
+    d1, d2 = x.size()
+    ret = x[
+        torch.arange(d1).unsqueeze(1).repeat((1, d2)).flatten(),
+        indexes.flatten()
+    ].view(d1, d2)
+    return ret
