@@ -118,6 +118,14 @@ def to_symmetric(y: torch.Tensor):
     return stick(real_sym, imag_sym)
 
 
+def multiply_by_i(z: torch.Tensor):
+    """
+    For Z = X + iY, calculates the operation i Z = i (X + iY) = -Y + iX
+    :param z: b x * x 2 x n x n
+    """
+    return stick(-imag(z), real(z))
+
+
 def repr(z: torch.Tensor):
     batch_size, _, n, _ = z.size()
     real_x, imag_x = real(z), imag(z)

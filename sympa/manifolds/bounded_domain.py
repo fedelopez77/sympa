@@ -2,6 +2,7 @@ import torch
 from geoopt.manifolds.base import Manifold
 from sympa.manifolds import SymmetricManifold
 from sympa.math import symmetric_math as sm
+from sympa.math.caley_transform import inverse_caley_transform
 from sympa.math.takagi_factorization import takagi_factorization
 
 
@@ -22,24 +23,38 @@ class BoundedDomainManifold(SymmetricManifold):
     def __init__(self, ndim=1):
         super().__init__(ndim=ndim)
 
-    def r_metric(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    def dist(self, z1: torch.Tensor, z2: torch.Tensor, *, keepdim=False) -> torch.Tensor:
         """
-        R metric for the Bounded Domain Model:
-        Given z1, z2 in D_n, R: D_n x D_n -> Mat(n, C)
-            R(z1, z2) = (z1 - z2) (z1 - ẑ2^-1)^-1 (ẑ1^-1 - ẑ2^-1) (ẑ1^-1 - z2)^-1
+        To compute the distance in the Bounded Domain Model (BDM) we need to map the elements to the
+        Upper Half Space Model (UHSM) by means of the inverse Caley Transform, and then compute the distance
+        in that domain.
+
+        :param z1, z2: b x 2 x n x n: elements in the BDM
+        :param keepdim:
+        :return: distance between x and y
         """
-        x_conj_inverse = sm.inverse(sm.conjugate(x))
-        y_conj_inverse = sm.inverse(sm.conjugate(y))
+        uhsm_z1 = inverse_caley_transform(z1)
+        uhsm_z2 = inverse_caley_transform(z2)
+        return super().dist(uhsm_z1, uhsm_z2)
 
-        term_a = sm.subtract(x, y)
-        term_b = sm.inverse(sm.subtract(x, y_conj_inverse))
-        term_c = sm.subtract(x_conj_inverse, y_conj_inverse)
-        term_d = sm.inverse(sm.subtract(x_conj_inverse, y))
-
-        res = sm.bmm(term_a, term_b)
-        res = sm.bmm(res, term_c)
-        res = sm.bmm(res, term_d)
-        return res
+    # def r_metric(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    #     """
+    #     R metric for the Bounded Domain Model:
+    #     Given z1, z2 in D_n, R: D_n x D_n -> Mat(n, C)
+    #         R(z1, z2) = (z1 - z2) (z1 - ẑ2^-1)^-1 (ẑ1^-1 - ẑ2^-1) (ẑ1^-1 - z2)^-1
+    #     """
+    #     x_conj_inverse = sm.inverse(sm.conjugate(x))
+    #     y_conj_inverse = sm.inverse(sm.conjugate(y))
+    #
+    #     term_a = sm.subtract(x, y)
+    #     term_b = sm.inverse(sm.subtract(x, y_conj_inverse))
+    #     term_c = sm.subtract(x_conj_inverse, y_conj_inverse)
+    #     term_d = sm.inverse(sm.subtract(x_conj_inverse, y))
+    #
+    #     res = sm.bmm(term_a, term_b)
+    #     res = sm.bmm(res, term_c)
+    #     res = sm.bmm(res, term_d)
+    #     return res
 
     def egrad2rgrad(self, z: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
         """

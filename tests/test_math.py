@@ -94,6 +94,16 @@ class TestBasicMath(sympa.tests.TestCase):
 
         self.assertAllEqual(result, sm.subtract(x, x))
 
+    def test_multiply_by_i(self):
+        x = get_random_symmetric_matrices(10, 4)
+
+        result = sm.multiply_by_i(x)
+        expected_real = sm.real(result)
+        expected_imag = sm.imag(result)
+
+        self.assertAllEqual(expected_real, -sm.imag(x))
+        self.assertAllEqual(expected_imag, sm.real(x))
+
     def test_pow_square(self):
         x_real = torch.Tensor([[[1, -3],
                                 [5, -7]]])

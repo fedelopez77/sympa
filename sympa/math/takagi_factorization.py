@@ -21,7 +21,7 @@ def takagi_factorization(a: torch.Tensor):
     # z1, D
     z1, eigenvalues, diagonal = _get_z1(a)          # z1: b x 2 x n x n, evalues: b x n, diagonal: b x 2 x n x n
     diagonal = sm.pow(diagonal, 0.5)
-    eigenvalues = eigenvalues ** 0.5
+    eigenvalues = eigenvalues**0.5
 
     z2, b = _get_z2(a, z1)                          # z2, b: b x 2 x n x n
 
@@ -72,7 +72,7 @@ def _get_z1(a: torch.Tensor):
     z1 = sm.to_hermitian_from_compound_real_symmetric(eigenvectors)
 
     # asserts: A^* A = Z1^* D Z1
-    assert assert_all_close(a_star_a, sm.bmm3(sm.conj_trans(z1), diagonal, z1))
+    assert assert_all_close(a_star_a, sm.bmm3(sm.conj_trans(z1), diagonal, z1), factor=2)
 
     return z1, z_eigenvalues, diagonal
 
@@ -95,10 +95,10 @@ def reorder_eigenvectors(eigenvectors, desc_indices):
         for i in range(0, len(vecs), 2):
             elem_a = vecs[i][0]
             elem_b = vecs[i + 1][half_elem]
-            if torch.allclose(elem_a, elem_b, rtol=1e-05, atol=1e-06):
+            if assert_all_close(elem_a, elem_b, factor=5) and ((elem_a > 0 and elem_b > 0) or (elem_a < 0 and elem_b < 0)):
                 left.append(vecs[i])
                 right.append(vecs[i + 1])
-            elif torch.allclose(elem_a, elem_b * -1, rtol=1e-05, atol=1e-06):  # in this case, it swaps the eigenvectors
+            elif assert_all_close(elem_a, elem_b * -1, factor=5):  # in this case, it swaps the eigenvectors
                 left.append(vecs[i + 1])
                 right.append(vecs[i])
             else:

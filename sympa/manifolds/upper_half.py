@@ -1,7 +1,7 @@
 import torch
 from geoopt.manifolds.base import Manifold
 from sympa.manifolds import SymmetricManifold
-from sympa.math import symmetric_math as smath
+from sympa.math import symmetric_math as sm
 
 
 class UpperHalfManifold(SymmetricManifold):
@@ -21,24 +21,23 @@ class UpperHalfManifold(SymmetricManifold):
     def __init__(self, ndim=1):
         super().__init__(ndim=ndim)
 
-    def r_metric(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-        """
-        R metric for the Upper half space model:
-        Given z1, z2 in H_n, R: H_n x H_n -> Mat(n, C)
-            R(z1, z2) = (z1 - z2) (z1 - ẑ2)^-1 (ẑ1 - ẑ2) (ẑ1 - z2)^-1
-        """
-        x_conj = smath.conjugate(x)
-        y_conj = smath.conjugate(y)
-
-        term_a = smath.subtract(x, y)
-        term_b = smath.inverse(smath.subtract(x, y_conj))
-        term_c = smath.subtract(x_conj, y_conj)
-        term_d = smath.inverse(smath.subtract(x_conj, y))
-
-        res = smath.bmm(term_a, term_b)
-        res = smath.bmm(res, term_c)
-        res = smath.bmm(res, term_d)
-        return res
+    # def r_metric(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    #     """
+    #     R metric for the Upper half space model:
+    #     Given z1, z2 in H_n, R: H_n x H_n -> Mat(n, C)
+    #         R(z1, z2) = (z1 - z2) (z1 - ẑ2)^-1 (ẑ1 - ẑ2) (ẑ1 - z2)^-1
+    #     """
+    #     x_conj = sm.conjugate(x)
+    #     y_conj = sm.conjugate(y)
+    #
+    #     term_a = sm.subtract(x, y)
+    #     term_b = sm.inverse(sm.subtract(x, y_conj))
+    #     term_c = sm.subtract(x_conj, y_conj)
+    #     term_d = sm.inverse(sm.subtract(x_conj, y))
+    #
+    #     res = sm.bmm3(term_a, term_b, term_c)
+    #     res = sm.bmm(res, term_d)
+    #     return res
 
     def egrad2rgrad(self, x: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
         """
@@ -66,7 +65,7 @@ class UpperHalfManifold(SymmetricManifold):
         # real_grad = y.bmm(real_grad).bmm(y)
         # imag_grad = y.bmm(imag_grad).bmm(y)
         # return smath.stick(real_grad, imag_grad)
-        y = smath.imag(x)
+        y = sm.imag(x)
         return y.bmm(u).bmm(y)
 
     def projx(self, x: torch.Tensor) -> torch.Tensor:
@@ -84,17 +83,17 @@ class UpperHalfManifold(SymmetricManifold):
         2) D_tilde = clamp(D, min=epsilon)
         3) Y_tilde = SD_tildeS^-1
         """
-        y = smath.imag(x)
-        y_tilde = smath.positive_conjugate_projection(y)
-        return smath.stick(smath.real(x), y_tilde)
+        y = sm.imag(x)
+        y_tilde = sm.positive_conjugate_projection(y)
+        return sm.stick(sm.real(x), y_tilde)
 
 
 def get_conjugate_of_r(x: torch.Tensor, y: torch.Tensor):
     """A = (ẑ1 - z2)(ẑ1 - ẑ2) ^ {-1}."""
-    x_conj = smath.conjugate(x)
-    y_conj = smath.conjugate(y)
-    term_a = smath.subtract(x_conj, y)
-    term_b = smath.inverse(smath.subtract(x_conj, y_conj))
+    x_conj = sm.conjugate(x)
+    y_conj = sm.conjugate(y)
+    term_a = sm.subtract(x_conj, y)
+    term_b = sm.inverse(sm.subtract(x_conj, y_conj))
 
-    res = smath.bmm(term_a, term_b)
+    res = sm.bmm(term_a, term_b)
     return res
