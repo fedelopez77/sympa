@@ -42,4 +42,4 @@ def row_sort(x, indexes):
 
 
 def assert_all_close(a, b, factor=1):
-    return torch.all((a - b).abs() < EPS[a.dtype] * factor)
+    return torch.all((a - b).abs() < EPS[torch.float32] * factor)

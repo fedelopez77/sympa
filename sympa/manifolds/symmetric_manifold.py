@@ -36,7 +36,7 @@ class SymmetricManifold(Manifold, ABC):
         :return: distance between x and y in the UHSM
         """
         # with Z1 = X + iY, define Z3 = sqrt(Y)^-1 (Z2 - X) sqrt(Y)^-1
-        real_z1, imag_z1 = sm.real(z1), sm.imag(z2)
+        real_z1, imag_z1 = sm.real(z1), sm.imag(z1)
         inv_sqrt_imag_z1 = sm.matrix_sqrt(imag_z1).inverse()
         inv_sqrt_imag_z1 = sm.stick(inv_sqrt_imag_z1, torch.zeros_like(inv_sqrt_imag_z1))
         z2_minus_real_z1 = sm.subtract(z2, sm.stick(real_z1, torch.zeros_like(real_z1)))

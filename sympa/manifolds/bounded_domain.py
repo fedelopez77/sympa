@@ -108,6 +108,6 @@ def get_id_minus_conjugate_z_times_z(z: torch.Tensor):
     :param z: b x 2 x n x n
     :return: Id - \overline(z)z
     """
-    identity = sm.identity_from_tensor(z)
+    identity = sm.identity_like(z)
     conj_z_z = sm.bmm(sm.conjugate(z), z)
     return sm.subtract(identity, conj_z_z)

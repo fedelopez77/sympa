@@ -221,7 +221,7 @@ def identity(dims: int):
     return torch.stack((real, imag))
 
 
-def identity_from_tensor(z: torch.Tensor):
+def identity_like(z: torch.Tensor):
     """
     Return an identity of the shape of z, with the same type and device.
     :param z: b x 2 x n x n
