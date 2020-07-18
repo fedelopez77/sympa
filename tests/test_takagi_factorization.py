@@ -20,17 +20,7 @@ class TestTakagiFactorization(sympa.tests.TestCase):
         diagonal = torch.diag_embed(eigenvalues)
         diagonal = sm.stick(diagonal, torch.zeros_like(diagonal))
 
-        self.assertAllClose(a, sm.bmm3(s, diagonal, sm.transpose(s)))
-
-    def test_takagi_factorization_real_pos_imag_pos_inverse(self):
-        a = get_random_symmetric_matrices(3, 3)
-
-        eigenvalues, s = takagi_factorization(a)
-
-        diagonal = torch.diag_embed(eigenvalues)
-        diagonal = sm.stick(diagonal, torch.zeros_like(diagonal))
-
-        self.assertAllClose(a, sm.bmm3(s, diagonal, sm.inverse(s)))
+        self.assertAllClose(a, sm.bmm3(sm.conjugate(s), diagonal, sm.conj_trans(s)))
 
     def test_takagi_factorization_real_pos_imag_neg(self):
         a = get_random_symmetric_matrices(3, 3)
@@ -41,7 +31,7 @@ class TestTakagiFactorization(sympa.tests.TestCase):
         diagonal = torch.diag_embed(eigenvalues)
         diagonal = sm.stick(diagonal, torch.zeros_like(diagonal))
 
-        self.assertAllClose(a, sm.bmm3(s, diagonal, sm.transpose(s)))
+        self.assertAllClose(a, sm.bmm3(sm.conjugate(s), diagonal, sm.conj_trans(s)))
 
     def test_takagi_factorization_real_neg_imag_pos(self):
         a = get_random_symmetric_matrices(3, 3)
@@ -52,7 +42,7 @@ class TestTakagiFactorization(sympa.tests.TestCase):
         diagonal = torch.diag_embed(eigenvalues)
         diagonal = sm.stick(diagonal, torch.zeros_like(diagonal))
 
-        self.assertAllClose(a, sm.bmm3(s, diagonal, sm.transpose(s)))
+        self.assertAllClose(a, sm.bmm3(sm.conjugate(s), diagonal, sm.conj_trans(s)))
 
     def test_takagi_factorization_real_neg_imag_neg(self):
         a = get_random_symmetric_matrices(3, 3)
@@ -63,7 +53,7 @@ class TestTakagiFactorization(sympa.tests.TestCase):
         diagonal = torch.diag_embed(eigenvalues)
         diagonal = sm.stick(diagonal, torch.zeros_like(diagonal))
 
-        self.assertAllClose(a, sm.bmm3(s, diagonal, sm.transpose(s)))
+        self.assertAllClose(a, sm.bmm3(sm.conjugate(s), diagonal, sm.conj_trans(s)))
 
     def test_takagi_factorization_small_values(self):
         a = get_random_symmetric_matrices(3, 3) / 10
@@ -73,7 +63,7 @@ class TestTakagiFactorization(sympa.tests.TestCase):
         diagonal = torch.diag_embed(eigenvalues)
         diagonal = sm.stick(diagonal, torch.zeros_like(diagonal))
 
-        self.assertAllClose(a, sm.bmm3(s, diagonal, sm.transpose(s)))
+        self.assertAllClose(a, sm.bmm3(sm.conjugate(s), diagonal, sm.conj_trans(s)))
 
     def test_takagi_factorization_large_values(self):
         a = get_random_symmetric_matrices(3, 3) * 10
@@ -83,7 +73,7 @@ class TestTakagiFactorization(sympa.tests.TestCase):
         diagonal = torch.diag_embed(eigenvalues)
         diagonal = sm.stick(diagonal, torch.zeros_like(diagonal))
 
-        self.assertAllClose(a, sm.bmm3(s, diagonal, sm.transpose(s)))
+        self.assertAllClose(a, sm.bmm3(sm.conjugate(s), diagonal, sm.conj_trans(s)))
 
     def test_takagi_factorization_very_large_values(self):
         a = get_random_symmetric_matrices(3, 3) * 1000
@@ -93,17 +83,46 @@ class TestTakagiFactorization(sympa.tests.TestCase):
         diagonal = torch.diag_embed(eigenvalues)
         diagonal = sm.stick(diagonal, torch.zeros_like(diagonal))
 
-        self.assertAllClose(a, sm.bmm3(s, diagonal, sm.transpose(s)))
+        self.assertAllClose(a, sm.bmm3(sm.conjugate(s), diagonal, sm.conj_trans(s)))
 
-    def test_takagi_factorization_very_large_values_inverse(self):
-        a = get_random_symmetric_matrices(3, 3) * 1000
+    def test_takagi_factorization_real_identity(self):
+        a = sm.identity_like(get_random_symmetric_matrices(3, 3))
 
         eigenvalues, s = takagi_factorization(a)
 
         diagonal = torch.diag_embed(eigenvalues)
         diagonal = sm.stick(diagonal, torch.zeros_like(diagonal))
 
-        self.assertAllClose(a, sm.bmm3(s, diagonal, sm.inverse(s)))
+        self.assertAllClose(a, sm.bmm3(sm.conjugate(s), diagonal, sm.conj_trans(s)))
+        self.assertAllClose(a, s)
+        self.assertAllClose(torch.ones_like(eigenvalues), eigenvalues)
+
+    def test_takagi_factorization_imag_identity(self):
+        a = sm.identity_like(get_random_symmetric_matrices(3, 3))
+        a = sm.stick(sm.imag(a), sm.real(a))
+
+        eigenvalues, s = takagi_factorization(a)
+
+        diagonal = torch.diag_embed(eigenvalues)
+        diagonal = sm.stick(diagonal, torch.zeros_like(diagonal))
+
+        self.assertAllClose(a, sm.bmm3(sm.conjugate(s), diagonal, sm.conj_trans(s)))
+
+    def test_takagi_factorization_real_diagonal(self):
+        a = get_random_symmetric_matrices(3, 3) * 10
+        a = torch.where(sm.identity_like(a) == 1, a, torch.zeros_like(a))
+
+        eigenvalues, s = takagi_factorization(a)
+
+        diagonal = torch.diag_embed(eigenvalues)
+        diagonal = sm.stick(diagonal, torch.zeros_like(diagonal))
+
+        self.assertAllClose(a, sm.bmm3(sm.conjugate(s), diagonal, sm.conj_trans(s)))
+        # real part of eigenvectors is made of vectors with one 1 and all zeros
+        real_part = torch.sum(torch.abs(sm.real(s)), dim=-1)
+        self.assertAllClose(torch.ones_like(real_part), real_part)
+        # imaginary part of eigenvectors is all zeros
+        self.assertAllClose(torch.zeros(1), torch.sum(sm.imag(s)))
 
 
 if __name__ == '__main__':

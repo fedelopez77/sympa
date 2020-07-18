@@ -26,7 +26,6 @@ class SymmetricManifold(Manifold, ABC):
 
     def dist(self, z1: torch.Tensor, z2: torch.Tensor, *, keepdim=False) -> torch.Tensor:
         """
-
         This methods calculates the distance for the Upper Half Space Manifold (UHSM)
         It is implemented here since the way to calculate distances in the Bounded Domain Manifold requires mapping
         the points to the UHSM, and then applying this formula.
@@ -41,6 +40,11 @@ class SymmetricManifold(Manifold, ABC):
         inv_sqrt_imag_z1 = sm.stick(inv_sqrt_imag_z1, torch.zeros_like(inv_sqrt_imag_z1))
         z2_minus_real_z1 = sm.subtract(z2, sm.stick(real_z1, torch.zeros_like(real_z1)))
         z3 = sm.bmm3(inv_sqrt_imag_z1, z2_minus_real_z1, inv_sqrt_imag_z1)
+
+        ##### DEBUG: assume Z3 is an imaginary diagonal matrix
+        # identity = sm.identity_like(z3)
+        # z3 = sm.stick(sm.imag(identity), sm.real(identity))
+        ##################
 
         w = caley_transform(z3)
 

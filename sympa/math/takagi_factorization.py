@@ -7,9 +7,11 @@ from sympa.utils import row_sort, assert_all_close
 def takagi_factorization(a: torch.Tensor):
     """
     Given A ('a') square, complex, symmetric matrix.
-    Calculates factorization A = SDS^T
+    Calculates factorization A = Ŝ D S^*
      - D is a real nonnegative diagonal matrix
      - S is unitary
+     - Ŝ: S conjugate
+     - S^*: S conjugate transpose
 
     See https://en.wikipedia.org/wiki/Matrix_decomposition#Takagi's_factorization
 
@@ -66,9 +68,11 @@ def _get_z1(a: torch.Tensor):
     diagonal = torch.diag_embed(z_eigenvalues)
     diagonal = sm.stick(diagonal, torch.zeros_like(diagonal))
 
-    # reorders eigenvectors due to repetitions
-    eigenvectors = reorder_eigenvectors(eigenvectors, desc_indices)
-    eigenvectors = eigenvectors.transpose(-1, -2)
+    # if all eigenvalues equal 1, the input was the identity and we do not need to reorder the eigenvalues
+    if torch.any(z_eigenvalues != 1):
+        # reorders eigenvectors due to repetitions
+        eigenvectors = reorder_eigenvectors(eigenvectors, desc_indices)
+        eigenvectors = eigenvectors.transpose(-1, -2)
     z1 = sm.to_hermitian_from_compound_real_symmetric(eigenvectors)
 
     # asserts: A^* A = Z1^* D Z1
@@ -197,8 +201,11 @@ def _get_z3(b: torch.Tensor):
     :param b: b x 2 x n x n
     :return: z3: b x 2 x n x n
     """
-    # removes zeros for stability of operations
-    b_no_zeros = torch.where(torch.abs(b) > (sm.EPS[b.dtype] / 100), b, torch.ones_like(b))
+    # sets values outside of the diagonal to 1 for numerical stability of operations
+    diagonal_mask = sm.real(sm.identity_like(b))
+    diagonal_mask = sm.stick(diagonal_mask, diagonal_mask)
+    b_no_zeros = torch.where(diagonal_mask > 0.5, b, torch.ones_like(b))
+
     mod_b = sm.sym_abs(b_no_zeros)                                # b x n x n
     compound_mod_b = sm.stick(mod_b, mod_b)
 

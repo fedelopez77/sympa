@@ -27,14 +27,14 @@ def caley_transform(z: torch.Tensor) -> torch.Tensor:
 def inverse_caley_transform(z: torch.Tensor) -> torch.Tensor:
     """
     T^-1(Z): Bounded Domain Model -> Upper Half Space model
-    T^-1(Z) = i (Z + Id)(Z - Id)^-1
+    T^-1(Z) = i (Id + Z)(Id - Z)^-1
 
     :param z: b x 2 x n x n: PRE: z \in Bounded Domain Manifold
     :return: y \in Upper Half Space Manifold
     """
     identity = sm.identity_like(z)
 
-    i_z_plus_id = sm.multiply_by_i(sm.add(z, identity))
-    inv_z_minus_id = sm.inverse(sm.subtract(z, identity))
+    i_z_plus_id = sm.multiply_by_i(sm.add(identity, z))
+    inv_z_minus_id = sm.inverse(sm.subtract(identity, z))
 
     return sm.bmm(i_z_plus_id, inv_z_minus_id)

@@ -99,7 +99,7 @@ class BoundedDomainManifold(SymmetricManifold):
         diag_tilde = torch.diag_embed(eigenvalues_tilde)
         diag_tilde = sm.stick(diag_tilde, torch.zeros_like(diag_tilde))
 
-        z_tilde = sm.bmm3(s, diag_tilde, sm.inverse(s))
+        z_tilde = sm.bmm3(sm.conjugate(s), diag_tilde, sm.conj_trans(s))
         return z_tilde
 
 

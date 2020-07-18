@@ -9,7 +9,7 @@
 
 import torch
 from sympa.config import EPS
-from geoopt.linalg.batch_linalg import sym as _to_symmetric
+from geoopt.linalg.batch_linalg import sym as squared_to_symmetric
 
 
 def real(z: torch.Tensor):
@@ -34,9 +34,9 @@ def stick(real_part: torch.Tensor, imag_part: torch.Tensor):
     """
     Returns a symmetric complex tensor made of the real and imaginary parts
 
-    :param real_part: b x * x n x n
-    :param imag_part: b x * x n x n
-    :return z: b x * x 2 x n x n
+    :param real_part: b x n x n
+    :param imag_part: b x n x n
+    :return z: b x 2 x n x n
     """
     return torch.stack((real_part, imag_part), dim=1)
 
@@ -113,8 +113,8 @@ def to_symmetric(y: torch.Tensor):
     Copies the values on the upper triangular to the lower triangular in order to make it symmetric
     :param y: b x * x 2 x n x n
     """
-    real_sym = _to_symmetric(real(y))
-    imag_sym = _to_symmetric(imag(y))
+    real_sym = squared_to_symmetric(real(y))
+    imag_sym = squared_to_symmetric(imag(y))
     return stick(real_sym, imag_sym)
 
 
@@ -245,8 +245,8 @@ def to_hermitian(x: torch.Tensor):
     :param x: b x * x 2 x n x n. Values can be randomly generated
     :return: b x * x 2 x n x n. All matrices are now Hermitian.
     """
-    real_x = _to_symmetric(real(x))
-    imag_x = _to_symmetric(imag(x))
+    real_x = squared_to_symmetric(real(x))
+    imag_x = squared_to_symmetric(imag(x))
 
     # imaginary diagonal must be zero and imaginary elements in the upper triangular part of the matrix must
     # be of opposite sign than the elements in the lower triangular part
@@ -329,7 +329,7 @@ def matrix_sqrt(y: torch.Tensor):
     For a symmetric matrix Y, the square root by diagonalization is:
     1) Y = SDS^-1
     2) D_sq = D^0.5 -> the sqrt of each entry in D
-    3) sqrt(Y) = SD_sqS^-1
+    3) sqrt(Y) = S D_sq S^-1
     :param y: b x * x n x n. PRE: Each matrix must be symmetric
     :return: sqrt(y): b x * x n x n
     """

@@ -21,6 +21,7 @@ class UpperHalfManifold(SymmetricManifold):
     def __init__(self, ndim=1):
         super().__init__(ndim=ndim)
 
+    # Since the distance calculation no longer requires the R metric, this method is not required anymore
     # def r_metric(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     #     """
     #     R metric for the Upper half space model:
@@ -97,3 +98,44 @@ def get_conjugate_of_r(x: torch.Tensor, y: torch.Tensor):
 
     res = sm.bmm(term_a, term_b)
     return res
+
+
+def generate_matrix_in_upper_half_space(points: int, dims: int):
+    """
+    Generates 'points' matrices in the Upper Half Space Model of 'dims' dimensions.
+    This matrices already belong to the UHSM so they do not need to be projected.
+
+    The imaginary part is generated in a way that if the matrix A is 2x2 with [[a1, b1], [b1, a2]]
+     - a_i > 0
+     - a1 * a2 - b1^2 > 0
+    So the determinant of A is > 0
+    For this, we impose: |b_i| < sqrt(a1 * a2) / 2
+
+    The real part can be any symmetric matrix
+
+    :param points: amount of matrices that will be in the batch
+    :param dims: number of dimensions of the matrix
+    :return: tensor of points x 2 x dims x dims
+    """
+    epsilon = 0.01
+    imag = torch.rand(points, dims, dims).clamp(min=0.01)
+    for p in range(points):
+        for i in range(dims):
+            for j in range(i + 1, dims):
+                a_i = imag[p, i, i]
+                a_j = imag[p, j, j]
+                threshold = torch.sqrt(a_i * a_j) / 2
+                b_ij = imag[p, i, j]
+                if torch.abs(b_ij) < threshold:         # condition is satisfied
+                    imag[p, j, i] = b_ij                # makes matrix symmetric
+                else:
+                    abs_max_val = threshold * (1 - epsilon)
+                    imag[p, i, j] = imag[p, j, i] = torch.Tensor(1).uniform_(-abs_max_val, abs_max_val)
+
+        # checks that all the "sub" determinants in the matrix are > 0
+        for k in range(1, dims + 1):
+            sub_det = torch.det(imag[p, :k, :k])
+            assert sub_det > 0
+
+    real = sm.squared_to_symmetric(torch.rand(points, dims, dims))
+    return sm.stick(real, imag)

@@ -297,12 +297,12 @@ class TestBasicMath(sympa.tests.TestCase):
     def test_positive_conjugate_projection_with_negative_eigenvalues(self):
         x = torch.Tensor([[[6, 5],
                            [5, 3]]])
-        expected = torch.Tensor([[[6.2580, 4.6532],
-                                  [4.6532, 3.4661]]])
+        expected = torch.Tensor([[[6.2566, 4.6551],
+                                  [4.6551, 3.4636]]])
 
         result = sm.positive_conjugate_projection(x)
 
-        self.assertAllClose(expected, result)
+        self.assertAllClose(expected, result, rtol=1e-4)
 
     def test_to_hermitian(self):
         m = torch.rand(4, 2, 3, 3)
