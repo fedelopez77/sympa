@@ -21,6 +21,11 @@ class SymmetricManifold(Manifold, ABC):
     __scaling__ = Manifold.__scaling__.copy()
 
     def __init__(self, ndim=1):
+        """
+        Space of symmetric matrices of shape ndim x ndim
+
+        :param ndim: number of dimensions of the matrices
+        """
         super().__init__()
         self.ndim = ndim
 
@@ -41,11 +46,6 @@ class SymmetricManifold(Manifold, ABC):
         z2_minus_real_z1 = sm.subtract(z2, sm.stick(real_z1, torch.zeros_like(real_z1)))
         z3 = sm.bmm3(inv_sqrt_imag_z1, z2_minus_real_z1, inv_sqrt_imag_z1)
 
-        ##### DEBUG: assume Z3 is an imaginary diagonal matrix
-        # identity = sm.identity_like(z3)
-        # z3 = sm.stick(sm.imag(identity), sm.real(identity))
-        ##################
-
         w = caley_transform(z3)
 
         eigvalues, eigvectors = takagi_factorization(w)
@@ -60,19 +60,6 @@ class SymmetricManifold(Manifold, ABC):
         res = torch.sum(torch.log(r)**2, dim=-1)
         res = torch.sqrt(res)
         return res
-
-    # def r_metric(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-    #     """
-    #     The metric on S is governed by the function:
-    #         R: S_n x S_n -> Mat(n, C)
-    #
-    #     The distance (geodesics) between two points x and y are a function of R.
-    #     This is: d(x, y) = f(R(x, y))
-    #
-    #     :param x, y: Points in the space S_n. b x 2 x n x n
-    #     :return: b x 2 x n x n
-    #     """
-    #     raise NotImplementedError
 
     def retr(self, x: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
         """
@@ -90,23 +77,37 @@ class SymmetricManifold(Manifold, ABC):
         approx = x + u
         return self.projx(approx)
 
-    def egrad2rgrad(self, x: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
+    def _check_shape(self, shape: Tuple[int], name: str) -> Union[Tuple[bool, Optional[str]], bool]:
         """
-        Transform gradient computed using autodiff to the correct Riemannian gradient for the point :math:`x`.
+        Util to check shape.
+
+        Exhaustive implementation for checking if a given point has valid dimension size,
+        shape, etc. It should return boolean and a reason of failure if check is not passed
+
+        This function is overridden from its original implementation to work with spaces of
+        matrices
 
         Parameters
         ----------
-        x torch.Tensor
-            point on the manifold
-        u torch.Tensor
-            gradient to be projected
+        shape : Tuple[int]
+            shape of point on the manifold
+        name : str
+            name to be present in errors
 
         Returns
         -------
-        torch.Tensor
-            grad vector in the Riemannian manifold
+        bool, str or None
+            check result and the reason of fail if any
         """
-        raise NotImplementedError
+        ok = shape[-1] == self.ndim and shape[-2] == self.ndim
+        if not ok:
+            reason = "'{}' on the {} requires more than {} dim".format(
+                name, self, self.ndim
+            )
+        else:
+            reason = None
+        return ok, reason
+
 
     def proju(self, x: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
         return self.egrad2rgrad(x, u)
@@ -128,16 +129,7 @@ class SymmetricManifold(Manifold, ABC):
         # We might not need it
         pass
 
-    def _check_point_on_manifold(self, x: torch.Tensor, *, atol=1e-5, rtol=1e-5) -> Union[
-        Tuple[bool, Optional[str]], bool]:
-        # We might not need it
-        pass
-
-    def _check_vector_on_tangent(self, x: torch.Tensor, u: torch.Tensor, *, atol=1e-5, rtol=1e-5) -> Union[
-        Tuple[bool, Optional[str]], bool]:
-        # We might not need it
-        pass
-
-    def random(self, *size, dtype=None, device=None, **kwargs) -> torch.Tensor:
-        # We might not need it
+    def _check_vector_on_tangent(
+        self, x: torch.Tensor, u: torch.Tensor, *, atol=1e-5, rtol=1e-5
+    ) -> Union[Tuple[bool, Optional[str]], bool]:
         pass

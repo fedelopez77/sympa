@@ -1,8 +1,9 @@
 import torch
 from geoopt.manifolds.base import Manifold
 from sympa.manifolds import SymmetricManifold
+from sympa.manifolds.upper_half import UpperHalfManifold
 from sympa.math import symmetric_math as sm
-from sympa.math.caley_transform import inverse_caley_transform
+from sympa.math.caley_transform import caley_transform, inverse_caley_transform
 from sympa.math.takagi_factorization import takagi_factorization
 
 
@@ -36,25 +37,6 @@ class BoundedDomainManifold(SymmetricManifold):
         uhsm_z1 = inverse_caley_transform(z1)
         uhsm_z2 = inverse_caley_transform(z2)
         return super().dist(uhsm_z1, uhsm_z2)
-
-    # def r_metric(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-    #     """
-    #     R metric for the Bounded Domain Model:
-    #     Given z1, z2 in D_n, R: D_n x D_n -> Mat(n, C)
-    #         R(z1, z2) = (z1 - z2) (z1 - ẑ2^-1)^-1 (ẑ1^-1 - ẑ2^-1) (ẑ1^-1 - z2)^-1
-    #     """
-    #     x_conj_inverse = sm.inverse(sm.conjugate(x))
-    #     y_conj_inverse = sm.inverse(sm.conjugate(y))
-    #
-    #     term_a = sm.subtract(x, y)
-    #     term_b = sm.inverse(sm.subtract(x, y_conj_inverse))
-    #     term_c = sm.subtract(x_conj_inverse, y_conj_inverse)
-    #     term_d = sm.inverse(sm.subtract(x_conj_inverse, y))
-    #
-    #     res = sm.bmm(term_a, term_b)
-    #     res = sm.bmm(res, term_c)
-    #     res = sm.bmm(res, term_d)
-    #     return res
 
     def egrad2rgrad(self, z: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
         """
@@ -100,7 +82,53 @@ class BoundedDomainManifold(SymmetricManifold):
         diag_tilde = sm.stick(diag_tilde, torch.zeros_like(diag_tilde))
 
         z_tilde = sm.bmm3(sm.conjugate(s), diag_tilde, sm.conj_trans(s))
-        return z_tilde
+
+        # we do this so no operation is applied on the matrices that already belong to the space.
+        # This prevents modifying values due to numerical instabilities/floating point ops
+        batch_wise_mask = torch.all(eigenvalues < 1 - sm.EPS[z.dtype], dim=-1, keepdim=True)
+        already_in_space_mask = batch_wise_mask.unsqueeze(-1).unsqueeze(-1).expand_as(z)
+
+        return torch.where(already_in_space_mask, z, z_tilde)
+
+    def _check_point_on_manifold(self, x: torch.Tensor, *, atol=1e-5, rtol=1e-5):
+        """
+        Util to check point lies on the manifold.
+        For the Bounded Domain Model, that implies that Id - ẐZ is positive definite.
+
+        x is assumed to be one complex matrix with the shape 2 x ndim x ndim
+
+        Parameters
+        ----------
+        x torch.Tensor
+            point on the manifold
+        atol: float
+            absolute tolerance as in :func:`numpy.allclose`
+        rtol: float
+            relative tolerance as in :func:`numpy.allclose`
+
+        Returns
+        -------
+        bool, str or None
+            check result and the reason of fail if any
+        """
+        x = x.unsqueeze(0)
+        id_minus_zz = get_id_minus_conjugate_z_times_z(x)
+        ok = sm.is_hermitian(id_minus_zz)
+        if not ok:
+            reason = "'Id - ẐZ' is not hermitian (is not definite positive)"
+        else:
+            reason = None
+        return ok, reason
+
+    def random(self, *size, dtype=None, device=None, **kwargs) -> torch.Tensor:
+        """
+        Random sampling on the manifold.
+
+        The exact implementation depends on manifold and usually does not follow all
+        assumptions about uniform measure, etc.
+        """
+        points = UpperHalfManifold(ndim=self.ndim).random(size[0])
+        return caley_transform(points)
 
 
 def get_id_minus_conjugate_z_times_z(z: torch.Tensor):

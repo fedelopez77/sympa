@@ -188,10 +188,16 @@ def positive_conjugate_projection(y: torch.Tensor):
     :param y: b x n x n. PRE: Each matrix must be symmetric
     """
     eigenvalues, s = symeig(y)
-    eigenvalues = torch.clamp(eigenvalues, min=EPS[y.dtype])
-    d_tilde = torch.diag_embed(eigenvalues)
+    eigenvalues_tilde = torch.clamp(eigenvalues, min=EPS[y.dtype])
+    d_tilde = torch.diag_embed(eigenvalues_tilde)
     y_tilde = s.bmm(d_tilde).bmm(s.inverse())
-    return y_tilde
+
+    # we do this so no operation is applied on the matrices that already belong to the space.
+    # This prevents modifying values due to numerical instabilities/floating point ops
+    batch_wise_mask = torch.all(eigenvalues > EPS[y.dtype], dim=-1, keepdim=True)    # True means it must not be projected
+    mask = batch_wise_mask.unsqueeze(-1).expand_as(y)
+
+    return torch.where(mask, y, y_tilde)
 
 
 def symeig(y: torch.Tensor):
@@ -231,6 +237,15 @@ def identity_like(z: torch.Tensor):
     id = identity(dim_z).type(z.type()).to(z.device)
     id = id.unsqueeze(dim=0).repeat(bs, 1, 1, 1)
     return id
+
+
+def is_hermitian(z: torch.Tensor):
+    """
+    Returns whether z is hermitian or not
+    Z is hermitian iif Z = Z^*
+    This is, Z is equal to the conjugate transpose of Z
+    """
+    return torch.allclose(z, conj_trans(z))
 
 
 def to_hermitian(x: torch.Tensor):

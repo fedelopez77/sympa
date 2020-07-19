@@ -21,25 +21,6 @@ class UpperHalfManifold(SymmetricManifold):
     def __init__(self, ndim=1):
         super().__init__(ndim=ndim)
 
-    # Since the distance calculation no longer requires the R metric, this method is not required anymore
-    # def r_metric(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-    #     """
-    #     R metric for the Upper half space model:
-    #     Given z1, z2 in H_n, R: H_n x H_n -> Mat(n, C)
-    #         R(z1, z2) = (z1 - z2) (z1 - ẑ2)^-1 (ẑ1 - ẑ2) (ẑ1 - z2)^-1
-    #     """
-    #     x_conj = sm.conjugate(x)
-    #     y_conj = sm.conjugate(y)
-    #
-    #     term_a = sm.subtract(x, y)
-    #     term_b = sm.inverse(sm.subtract(x, y_conj))
-    #     term_c = sm.subtract(x_conj, y_conj)
-    #     term_d = sm.inverse(sm.subtract(x_conj, y))
-    #
-    #     res = sm.bmm3(term_a, term_b, term_c)
-    #     res = sm.bmm(res, term_d)
-    #     return res
-
     def egrad2rgrad(self, x: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
         """
         Transform gradient computed using autodiff to the correct Riemannian gradient for the point :math:`x`.
@@ -88,16 +69,45 @@ class UpperHalfManifold(SymmetricManifold):
         y_tilde = sm.positive_conjugate_projection(y)
         return sm.stick(sm.real(x), y_tilde)
 
+    def _check_point_on_manifold(self, x: torch.Tensor, *, atol=1e-5, rtol=1e-5):
+        """
+        Util to check point lies on the manifold.
+        For the Upper Half Space Model, that implies that Im(x) is positive definite.
 
-def get_conjugate_of_r(x: torch.Tensor, y: torch.Tensor):
-    """A = (ẑ1 - z2)(ẑ1 - ẑ2) ^ {-1}."""
-    x_conj = sm.conjugate(x)
-    y_conj = sm.conjugate(y)
-    term_a = sm.subtract(x_conj, y)
-    term_b = sm.inverse(sm.subtract(x_conj, y_conj))
+        x is assumed to be one complex matrix with the shape 2 x ndim x ndim
 
-    res = sm.bmm(term_a, term_b)
-    return res
+        Parameters
+        ----------
+        x torch.Tensor
+            point on the manifold
+        atol: float
+            absolute tolerance as in :func:`numpy.allclose`
+        rtol: float
+            relative tolerance as in :func:`numpy.allclose`
+
+        Returns
+        -------
+        bool, str or None
+            check result and the reason of fail if any
+        """
+        imag_x = sm.imag(x.unsqueeze(0))
+        ok = torch.det(imag_x) > 0
+        if not ok:
+            reason = "'x' determinant is not > 0"
+        else:
+            reason = None
+        return ok, reason
+
+
+    def random(self, *size, dtype=None, device=None, **kwargs) -> torch.Tensor:
+        """
+        Random sampling on the manifold.
+
+        The exact implementation depends on manifold and usually does not follow all
+        assumptions about uniform measure, etc.
+        """
+        points = generate_matrix_in_upper_half_space(size[0], self.ndim)
+        return points.to(device=device, dtype=dtype)
 
 
 def generate_matrix_in_upper_half_space(points: int, dims: int):
