@@ -98,7 +98,6 @@ class UpperHalfManifold(SymmetricManifold):
             reason = None
         return ok, reason
 
-
     def random(self, *size, dtype=None, device=None, **kwargs) -> torch.Tensor:
         """
         Random sampling on the manifold.
@@ -106,11 +105,11 @@ class UpperHalfManifold(SymmetricManifold):
         The exact implementation depends on manifold and usually does not follow all
         assumptions about uniform measure, etc.
         """
-        points = generate_matrix_in_upper_half_space(size[0], self.ndim)
+        points = generate_matrix_in_upper_half_space(size[0], self.ndim, **kwargs)
         return points.to(device=device, dtype=dtype)
 
 
-def generate_matrix_in_upper_half_space(points: int, dims: int):
+def generate_matrix_in_upper_half_space(points: int, dims: int, **kwargs):
     """
     Generates 'points' matrices in the Upper Half Space Model of 'dims' dimensions.
     This matrices already belong to the UHSM so they do not need to be projected.
@@ -125,10 +124,14 @@ def generate_matrix_in_upper_half_space(points: int, dims: int):
 
     :param points: amount of matrices that will be in the batch
     :param dims: number of dimensions of the matrix
+    :param epsilon: a_i values will be >= epsilon
+    :param top: samples numbers from a Uniform distribution U(epsilon, top)
     :return: tensor of points x 2 x dims x dims
     """
-    epsilon = 0.01
-    imag = torch.rand(points, dims, dims).clamp(min=0.01)
+    epsilon = kwargs.pop("epsilon", 0.001)
+    top = kwargs.pop("top", 0.01)
+
+    imag = torch.Tensor(points, dims, dims).uniform_(epsilon, top)
     for p in range(points):
         for i in range(dims):
             for j in range(i + 1, dims):
@@ -147,5 +150,5 @@ def generate_matrix_in_upper_half_space(points: int, dims: int):
             sub_det = torch.det(imag[p, :k, :k])
             assert sub_det > 0
 
-    real = sm.squared_to_symmetric(torch.rand(points, dims, dims))
+    real = sm.squared_to_symmetric(torch.Tensor(points, dims, dims).uniform_(-top, top))
     return sm.stick(real, imag)

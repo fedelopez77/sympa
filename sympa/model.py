@@ -10,59 +10,79 @@ log = get_logging()
 
 
 class Embeddings(nn.Module):
+    """Abstract Embedding layer that operates with embeddings as a Manifold parameter"""
+
     def __init__(self, num_embeddings, embedding_dim, manifold, _embeds):
+        """
+        :param num_embeddings: number of elements in the table
+        :param embedding_dim: dimensionality of embeddings.
+        If it is vector embeddings, it is the amount of dimensions in the vector.
+        If it is Matrix embeddings, it is the last dimension on the matrix
+        :param manifold: Instance of Geoopt Manifold
+        :param _embeds: tensor with initial value for embeddings
+        """
         super().__init__()
         self.num_embeddings = num_embeddings
         self.embedding_dim = embedding_dim
         self.manifold = manifold
         self.embeds = gt.ManifoldParameter(_embeds, manifold=self.manifold)
-        self.reset_parameters()
-
-    def reset_parameters(self):
-        torch.nn.init.uniform_(self.embeds.data, a=-config.INIT_EPS, b=config.INIT_EPS)
 
     def forward(self, input_index):
+        """
+        :param input_index: tensor of b x 1
+        :return: Embeddings of b x * x n
+        """
         return self.embeds[input_index]
+
+    def proj_embeds(self):
+        """Projects embeddings back into the manifold"""
+        with torch.no_grad():
+            self.embeds.data = self.manifold.projx(self.embeds.data)
 
 
 class ComplexSymmetricMatrixEmbeddings(Embeddings):
+
     def __init__(self, num_embeddings, embedding_dim, manifold):
         """
-        :param manifold: it should be either UpperHalfManifold or BoundedDomainManifold
+        Represents Embeddings of Complex Symemtric Matrices.
+        The shape of the embedding table is: num_embeddings x 2 x embedding_dim x embedding_dim
+        The second dimension is 2, since the element 0 represents the real part,
+        and the element 1 represents the imaginary part of the matrices.
+
+        :param num_embeddings: number of elements in the table
+        :param embedding_dim: dimensionality of matrix embeddings.
+        :param manifold: UpperHalfManifold or BoundedDomainManifold
         """
-        _embeds = torch.Tensor(num_embeddings, 2, embedding_dim, embedding_dim)
+        epsilon = config.EPS[torch.Tensor().dtype]
+        _embeds = self.manifold.random(num_embeddings, epsilon=epsilon, top=config.INIT_EPS)
         super().__init__(num_embeddings, embedding_dim, manifold, _embeds)
-        with torch.no_grad():
-            self.embeds = smath.to_symmetric(self.embeds)
-            self.embeds = self.manifold.projx(self.embeds)
 
 
 class VectorEmbeddings(Embeddings):
     def __init__(self, num_embeddings, embedding_dim, manifold):
-        _embeds = torch.Tensor(num_embeddings, embedding_dim)
+        init_eps = config.INIT_EPS
+        _embeds = torch.Tensor(num_embeddings, embedding_dim).uniform_(-init_eps, init_eps)
         super().__init__(num_embeddings, embedding_dim, manifold, _embeds)
-        with torch.no_grad():
-            self.embeds.data = self.manifold.projx(self.embeds)
+        self.proj_embeds()
 
 
 class Model(nn.Module):
+    """Graph embedding model that operates on different spaces"""
     def __init__(self, args):
-        """
-        :param args:
-        :param graph: tensor of n x n with n = args.num_points with all the distances in the graph
-        """
         super().__init__()
 
         self.num_points = args.num_points
         self.all_points = list(range(self.num_points))
         if args.model == "euclidean":
             self.embeddings = VectorEmbeddings(args.num_points, args.dims, manifold=gt.Euclidean(1))
-        if args.model == "poincare":
+        elif args.model == "poincare":
             self.embeddings = VectorEmbeddings(args.num_points, args.dims, manifold=gt.PoincareBall())
         elif args.model == "upper":
-            self.embeddings = ComplexSymmetricMatrixEmbeddings(args.num_points, args.dims, manifold=UpperHalfManifold())
+            self.embeddings = ComplexSymmetricMatrixEmbeddings(args.num_points, args.dims,
+                                                               manifold=UpperHalfManifold(args.dims))
         elif args.model == "bounded":
-            self.embeddings = ComplexSymmetricMatrixEmbeddings(args.num_points, args.dims, manifold=BoundedDomainManifold())
+            self.embeddings = ComplexSymmetricMatrixEmbeddings(args.num_points, args.dims,
+                                                               manifold=BoundedDomainManifold(args.dims))
         self.manifold = self.embeddings.manifold
 
     def forward(self, input_index):
@@ -95,8 +115,8 @@ class Model(nn.Module):
         'input_index' is assumed to be i and this function returns the pairs (i, j) for all j > i
 
         Example:
-            input_index = [c, a]
             all_points = [a, b, c, d]
+            input_index = [c, a]
             src: [c, a, a, a]
             dst: [d, b, c, d]
 

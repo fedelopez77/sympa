@@ -101,6 +101,24 @@ class TestBoundedDomainManifold(sympa.tests.TestCase):
 
         self.assertAllClose(dist_xy, dist_yx)
 
+    def test_distance_is_symmetric_with_small_values(self):
+        x = self.manifold.random(10, epsilon=0.0001, top=0.001)
+        y = self.manifold.random(10, epsilon=0.0001, top=0.001)
+
+        dist_xy = self.manifold.dist(x, y)
+        dist_yx = self.manifold.dist(y, x)
+
+        self.assertAllClose(dist_xy, dist_yx)
+
+    def test_distance_is_symmetric_with_very_small_values(self):
+        x = self.manifold.random(10, epsilon=0.00001, top=0.0001)
+        y = self.manifold.random(10, epsilon=0.00001, top=0.0001)
+
+        dist_xy = self.manifold.dist(x, y)
+        dist_yx = self.manifold.dist(y, x)
+
+        self.assertAllClose(dist_xy, dist_yx)
+
     def test_distance_to_same_point_is_zero(self):
         x = self.manifold.random(10)
 

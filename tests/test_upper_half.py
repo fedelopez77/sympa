@@ -12,10 +12,11 @@ class TestUpperHalfManifold(sympa.tests.TestCase):
     def setUp(self):
         super().setUp()
         torch.set_default_dtype(torch.float64)
-        self.manifold = UpperHalfManifold(ndim=3)
+        self.ndims = 3
+        self.manifold = UpperHalfManifold(ndim=self.ndims)
 
     def test_proj_x_real_pos_imag_pos(self):
-        x = get_random_symmetric_matrices(10, 3)
+        x = get_random_symmetric_matrices(10, self.ndims)
 
         proj_x = self.manifold.projx(x)
 
@@ -27,7 +28,7 @@ class TestUpperHalfManifold(sympa.tests.TestCase):
             self.assertTrue(self.manifold.check_point_on_manifold(point))
 
     def test_proj_x_real_pos_imag_neg(self):
-        x = get_random_symmetric_matrices(10, 3)
+        x = get_random_symmetric_matrices(10, self.ndims)
         x = sm.stick(sm.real(x), sm.imag(x) * -1)
 
         proj_x = self.manifold.projx(x)
@@ -40,7 +41,7 @@ class TestUpperHalfManifold(sympa.tests.TestCase):
             self.assertTrue(self.manifold.check_point_on_manifold(point))
 
     def test_proj_x_real_neg_imag_pos(self):
-        x = get_random_symmetric_matrices(10, 3)
+        x = get_random_symmetric_matrices(10, self.ndims)
         x = sm.stick(sm.real(x) * -1, sm.imag(x))
 
         proj_x = self.manifold.projx(x)
@@ -53,7 +54,7 @@ class TestUpperHalfManifold(sympa.tests.TestCase):
             self.assertTrue(self.manifold.check_point_on_manifold(point))
 
     def test_proj_x_real_neg_imag_neg(self):
-        x = get_random_symmetric_matrices(10, 3)
+        x = get_random_symmetric_matrices(10, self.ndims)
         x = sm.stick(sm.real(x) * -1, sm.imag(x) * -1)
 
         proj_x = self.manifold.projx(x)
@@ -112,18 +113,59 @@ class TestUpperHalfManifold(sympa.tests.TestCase):
         self.assertAllClose(dist_xy, dist_yx)
 
     def test_distance_to_same_point_is_zero(self):
-        x = self.manifold.random(10) * 10
+        x = self.manifold.random(10, top=10)
 
         dist_xx = self.manifold.dist(x, x)
 
         self.assertAllClose(dist_xx, torch.zeros_like(dist_xx))
 
-    def test_distance_with_small_perturbation(self):
+    def test_distance_is_small_with_small_perturbation(self):
         x = self.manifold.random(10)
         y = x.clone()
-        y[:, 0, 0] = y[:, 0, 0] * 1.001
+        y[:, 0] = y[:, 0] * 1.001
 
-        # In this case, the real part of Z3 is not symmetric any more,
+        dist_xy = self.manifold.dist(x, y)
+        dist_yx = self.manifold.dist(y, x)
+
+        self.assertAllClose(dist_xy, dist_yx)
+
+    def test_distance_is_symmetric_with_small_values(self):
+        x = self.manifold.random(10, epsilon=0.0001, top=0.001)
+        y = self.manifold.random(10, epsilon=0.0001, top=0.001)
+
+        dist_xy = self.manifold.dist(x, y)
+        dist_yx = self.manifold.dist(y, x)
+
+        self.assertAllClose(dist_xy, dist_yx)
+
+    def test_distance_is_symmetric_with_very_small_values(self):
+        x = self.manifold.random(10, epsilon=0.00001, top=0.0001)
+        y = self.manifold.random(10, epsilon=0.00001, top=0.0001)
+
+        dist_xy = self.manifold.dist(x, y)
+        dist_yx = self.manifold.dist(y, x)
+
+        self.assertAllClose(dist_xy, dist_yx)
+
+    def test_distance_is_symmetric_with_diagonal_matrices(self):
+        x = self.manifold.random(10)
+        y = self.manifold.random(10)
+        diagonal_mask = torch.eye(self.ndims).unsqueeze(0).repeat(10, 1, 1).bool()
+        diagonal_mask = sm.stick(diagonal_mask, diagonal_mask)
+        x = torch.where(diagonal_mask, x, torch.zeros_like(x))
+        y = torch.where(diagonal_mask, y, torch.zeros_like(y))
+
+        dist_xy = self.manifold.dist(x, y)
+        dist_yx = self.manifold.dist(y, x)
+
+        self.assertAllClose(dist_xy, dist_yx)
+
+    def test_distance_is_symmetric_only_imaginary_matrices(self):
+        x = self.manifold.random(10)
+        y = self.manifold.random(10)
+        zeros = torch.zeros_like(sm.real(x))
+        x = sm.stick(zeros, sm.imag(x))
+        y = sm.stick(zeros, sm.imag(y))
 
         dist_xy = self.manifold.dist(x, y)
         dist_yx = self.manifold.dist(y, x)

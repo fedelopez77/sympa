@@ -108,7 +108,6 @@ class SymmetricManifold(Manifold, ABC):
             reason = None
         return ok, reason
 
-
     def proju(self, x: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
         return self.egrad2rgrad(x, u)
 

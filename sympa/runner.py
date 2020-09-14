@@ -52,7 +52,8 @@ class Runner(object):
                 best_val_metric = val_metric
                 best_epoch = epoch
                 best_model_state = copy.deepcopy(self.model.state_dict())
-
+            
+            # TODO: implement early stopping
         log.info(f"Final evaluation on best model from epoch {best_epoch}")
         self.model.load_state_dict(best_model_state)
 

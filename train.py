@@ -16,11 +16,11 @@ def config_parser(parser):
     parser.add_argument("--data", required=True, type=str, help="Name of prep folder")
     parser.add_argument("--run_id", required=True, type=str, help="Name of model/run to export")
     # Model
-    parser.add_argument("--model", default="euclidean", type=str, help="Model type: 'euclidean', 'poincare', "
+    parser.add_argument("--model", default="poincare", type=str, help="Model type: 'euclidean', 'poincare', "
                                                                        "'upper' or 'bounded'")
-    parser.add_argument("--dims", default=2, type=int, help="Dimensions for the model.")
+    parser.add_argument("--dims", default=5, type=int, help="Dimensions for the model.")
     # optim and config
-    parser.add_argument("--learning_rate", default=3e-2, type=float, help="Starting learning rate.")
+    parser.add_argument("--learning_rate", default=1e-2, type=float, help="Starting learning rate.")
     parser.add_argument("--weight_decay", default=0.00, type=float, help="L2 Regularization.")
     parser.add_argument("--patience", default=1000, type=int, help="Patience for scheduler.")
     parser.add_argument("--max_grad_norm", default=1000.0, type=float, help="Max gradient norm.")

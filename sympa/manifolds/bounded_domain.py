@@ -72,7 +72,7 @@ class BoundedDomainManifold(SymmetricManifold):
         Steps to project: Z complex symmetric matrix
         1) Z = SDS^-1
         2) D_tilde = clamp(D, max=1 - epsilon)
-        3) Z_tilde = SD_tildeS^-1
+        3) Z_tilde = Ŝ D_tilde S^*
         """
         # TODO: what if Z is not even symmetric? Impose symmetry?
         eigenvalues, s = takagi_factorization(z)
@@ -127,7 +127,7 @@ class BoundedDomainManifold(SymmetricManifold):
         The exact implementation depends on manifold and usually does not follow all
         assumptions about uniform measure, etc.
         """
-        points = UpperHalfManifold(ndim=self.ndim).random(size[0])
+        points = UpperHalfManifold(ndim=self.ndim).random(size[0], **kwargs)
         return caley_transform(points)
 
 

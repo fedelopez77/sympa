@@ -15,7 +15,7 @@ from geoopt.linalg.batch_linalg import sym as squared_to_symmetric
 def real(z: torch.Tensor):
     """
     Returns the real part of z
-    :param z: b x * x 2 x n x n
+    :param z: b x 2 x n x n
     :return real: b x * x n x n
     """
     return z[:, 0]
@@ -24,7 +24,7 @@ def real(z: torch.Tensor):
 def imag(z: torch.Tensor):
     """
     Returns the imaginary part of z
-    :param z: b x * x 2 x n x n
+    :param z: b x 2 x n x n
     :return real: b x * x n x n
     """
     return z[:, 1]
@@ -72,6 +72,10 @@ def pow(z: torch.Tensor, exponent):
     """
     z = a + ib = r (cosθ + i sinθ) where r^2 = a^2 + b^2 and tanθ = b / a.
     Then: (a + ib)^n = r^n (cos(nθ) + i sin(nθ)).
+
+    :param z: tensor of b x 2 x n x n
+    :param exponent: number (int or float)
+    :return z^exponent: b x 2 x n x n
     """
     r = sym_abs(z)
     r = torch.pow(r, exponent)
@@ -86,10 +90,19 @@ def pow(z: torch.Tensor, exponent):
 
 def bmm(x: torch.Tensor, y: torch.Tensor):
     """
-    x = a + ib; y = c + id
-    xy = (a + ib)(c + id)
-       = ac + iad + ibc - bd
-       = (ac - bd) + i(ad + bc)
+    Performs a batch matrix-matrix product of matrices stored in x and y.
+    If x is a b × 2 x n × m and y is a b × 2 x m × p,
+    out will be a b × 2 x n × p.
+
+    Complex product:
+        x = a + ib; y = c + id
+        xy = (a + ib)(c + id)
+           = ac + iad + ibc - bd
+           = (ac - bd) + i(ad + bc)
+
+    :param x: b x 2 x n x m
+    :param y: b x 2 x m x p
+    :return b x 2 x n x p
     """
     real_x, imag_x = real(x), imag(x)
     real_y, imag_y = real(y), imag(y)
@@ -103,7 +116,14 @@ def bmm(x: torch.Tensor, y: torch.Tensor):
 
 
 def bmm3(x: torch.Tensor, y: torch.Tensor, z: torch.Tensor):
-    """A = X Y Z"""
+    """
+    Combines the product of 3 matrices in only one function call: A = X Y Z
+
+    :param x: b x 2 x n x m
+    :param y: b x 2 x m x p
+    :param z: b x 2 x p x q
+    :return b x 2 x n x q
+    """
     xy = bmm(x, y)
     return bmm(xy, z)
 
@@ -143,7 +163,7 @@ def repr(z: torch.Tensor):
 
 def inverse(z: torch.Tensor):
     """
-    It calculates the inverse of a matrix with complex entries according to the algorithm explained here:
+    It calculates the inverse of a matrix with complex entries according to the algorithm explained in:
     "Method to Calculate the Inverse of a Complex Matrix using Real Matrix Inversion" by Andreas Falkenberg
     https://pdfs.semanticscholar.org/f278/b548b5121fd0d09c2e589439b97fad16ece3.pdf
 
@@ -316,7 +336,9 @@ def hermitian_eig(h: torch.Tensor):
     Z has eigenvalues e1, e2,.. eN.
     M will have 2n eigenvalues, which will be: e1, e1, e2, e2,..., eN, eN.
     :param h: b x * x 2 x n x n. PRE: Each matrix must be Hermitian
-    :return: eigenvalues and eigenvectors of m, just as torch.symeig; eigenvalues of h
+    :return: eigenvalues of m, just as torch.symeig: 2n values
+             eigenvectors of m, just as torch.symeig: 2n x 2n matrices
+            eigenvalues of h: n values
     """
     m = to_compound_real_symmetric_from_hermitian(h)
 
@@ -344,7 +366,7 @@ def matrix_sqrt(y: torch.Tensor):
     For a symmetric matrix Y, the square root by diagonalization is:
     1) Y = SDS^-1
     2) D_sq = D^0.5 -> the sqrt of each entry in D
-    3) sqrt(Y) = S D_sq S^-1
+    3) Y_sqrt = S D_sq S^-1
     :param y: b x * x n x n. PRE: Each matrix must be symmetric
     :return: sqrt(y): b x * x n x n
     """

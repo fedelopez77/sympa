@@ -37,7 +37,7 @@ def get_distances(graph):
         for j, dst in enumerate(nodes):
             d = nx.shortest_path_length(graph, src, dst)
             dists[i, j] = d
-    return dists
+    return dists, nodes
 
 
 def main():
@@ -62,8 +62,8 @@ def main():
     graph = get_graph(args)
     plot_graph(graph, run_path)
 
-    distances = get_distances(graph)
-    id2node = {i: node for i, node in enumerate(graph.nodes())}
+    distances, nodes = get_distances(graph)
+    id2node = {i: node for i, node in enumerate(nodes)}
 
     torch.save(
         {
