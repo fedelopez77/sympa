@@ -81,7 +81,7 @@ class TestUpperHalfManifold(sympa.tests.TestCase):
         for point in proj_x:
             self.assertTrue(self.manifold.check_point_on_manifold(point))
 
-    def test_random_generator(self):
+    def test_random_generator_3d(self):
         x = self.manifold.random(100)
 
         for point in x:
@@ -92,6 +92,20 @@ class TestUpperHalfManifold(sympa.tests.TestCase):
 
         for point in x:
             self.assertTrue(self.manifold.check_point_on_manifold(point))
+
+    def test_random_generator_4d(self):
+        manifold = UpperHalfManifold(ndim=4)
+        x = manifold.random(100)
+
+        for point in x:
+            self.assertTrue(manifold.check_point_on_manifold(point))
+
+    def test_random_generator_50d(self):
+        manifold = UpperHalfManifold(ndim=50)
+        x = manifold.random(100)
+
+        for point in x:
+            self.assertTrue(manifold.check_point_on_manifold(point))
 
     def test_distance_is_symmetric_real_pos_imag_pos(self):
         x = self.manifold.random(10) * 10

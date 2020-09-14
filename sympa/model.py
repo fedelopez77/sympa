@@ -53,8 +53,8 @@ class ComplexSymmetricMatrixEmbeddings(Embeddings):
         :param embedding_dim: dimensionality of matrix embeddings.
         :param manifold: UpperHalfManifold or BoundedDomainManifold
         """
-        epsilon = config.EPS[torch.Tensor().dtype]
-        _embeds = self.manifold.random(num_embeddings, epsilon=epsilon, top=config.INIT_EPS)
+        epsilon = config.INIT_EPS / 10
+        _embeds = manifold.random(num_embeddings, epsilon=epsilon, top=config.INIT_EPS)
         super().__init__(num_embeddings, embedding_dim, manifold, _embeds)
 
 

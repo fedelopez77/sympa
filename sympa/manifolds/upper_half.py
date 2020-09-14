@@ -28,27 +28,19 @@ class UpperHalfManifold(SymmetricManifold):
         If you have a function f(z) on Hn, then the gradient is the  y * grad_eucl(f(z)) * y,
         where y is the imaginary part of z, and multiplication is just matrix multiplication.
 
-        Parameters
-        ----------
-        x torch.Tensor
-            point on the manifold
-        u torch.Tensor
-            gradient to be projected
-
-        Returns
-        -------
-        torch.Tensor
-            grad vector in the Riemannian manifold
+        :param x: point on the manifold. Shape: (b, 2, n, n)
+        :param u: gradient to be projected: Shape: same than x
+        :return grad vector in the Riemannian manifold. Shape: same than x
         """
         # TODO: CHECK THIS!!!!!!!!!!
         # TODO: If the gradient has also an imaginary part and a real part, this will fail. In that case it would be:
-        # real_grad, imag_grad = smath.real(u), smath.imag(u)
-        # y = smath.imag(x)
-        # real_grad = y.bmm(real_grad).bmm(y)
-        # imag_grad = y.bmm(imag_grad).bmm(y)
-        # return smath.stick(real_grad, imag_grad)
+        real_grad, imag_grad = sm.real(u), sm.imag(u)
         y = sm.imag(x)
-        return y.bmm(u).bmm(y)
+        real_grad = y.bmm(real_grad).bmm(y)
+        imag_grad = y.bmm(imag_grad).bmm(y)
+        return sm.stick(real_grad, imag_grad)
+        # y = sm.imag(x)
+        # return y.bmm(u).bmm(y)
 
     def projx(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -142,7 +134,7 @@ def generate_matrix_in_upper_half_space(points: int, dims: int, **kwargs):
                 if torch.abs(b_ij) < threshold:         # condition is satisfied
                     imag[p, j, i] = b_ij                # makes matrix symmetric
                 else:
-                    abs_max_val = threshold * (1 - epsilon)
+                    abs_max_val = threshold * 0.9
                     imag[p, i, j] = imag[p, j, i] = torch.Tensor(1).uniform_(-abs_max_val, abs_max_val)
 
         # checks that all the "sub" determinants in the matrix are > 0
