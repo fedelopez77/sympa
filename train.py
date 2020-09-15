@@ -57,7 +57,7 @@ def main():
     log.info(f"Loading data from {data_path}")
     data = torch.load(data_path)
     id2node = data["id2node"]
-    distances = data["distances"]
+    distances = data["distances"].to(config.DEVICE)
 
     args.num_points = len(id2node)
     model = get_model(args)
