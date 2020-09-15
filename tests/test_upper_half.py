@@ -108,8 +108,8 @@ class TestUpperHalfManifold(sympa.tests.TestCase):
             self.assertTrue(manifold.check_point_on_manifold(point))
 
     def test_distance_is_symmetric_real_pos_imag_pos(self):
-        x = self.manifold.random(10) * 10
-        y = self.manifold.random(10) * 10
+        x = self.manifold.random(10)
+        y = self.manifold.random(10)
 
         dist_xy = self.manifold.dist(x, y)
         dist_yx = self.manifold.dist(y, x)

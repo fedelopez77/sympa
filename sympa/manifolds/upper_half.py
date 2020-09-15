@@ -82,6 +82,9 @@ class UpperHalfManifold(SymmetricManifold):
         bool, str or None
             check result and the reason of fail if any
         """
+        if not self._check_matrices_are_symmetric(x, atol=atol, rtol=rtol):
+            return False, "Matrices are not symmetric"
+
         imag_x = sm.imag(x.unsqueeze(0))
         ok = torch.det(imag_x) > 0
         if not ok:
@@ -97,8 +100,14 @@ class UpperHalfManifold(SymmetricManifold):
         The exact implementation depends on manifold and usually does not follow all
         assumptions about uniform measure, etc.
         """
-        points = generate_matrix_in_upper_half_space(size[0], self.ndim, **kwargs)
-        return points.to(device=device, dtype=dtype)
+        from_ = kwargs.get("from_", -0.001)
+        to = kwargs.get("to", 0.001)
+        perturbation = sm.squared_to_symmetric(torch.Tensor(size[0], self.ndim, self.ndim).uniform_(from_, to))
+        identity = torch.eye(self.ndim).unsqueeze(0).repeat(size[0], 1, 1)
+        imag_part = identity + perturbation
+
+        real_part = sm.squared_to_symmetric(torch.Tensor(size[0], self.ndim, self.ndim).uniform_(from_, to))
+        return sm.stick(real_part, imag_part).to(device=device, dtype=dtype)
 
 
 def generate_matrix_in_upper_half_space(points: int, dims: int, **kwargs):

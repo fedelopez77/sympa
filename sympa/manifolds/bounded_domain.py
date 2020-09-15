@@ -111,6 +111,9 @@ class BoundedDomainManifold(SymmetricManifold):
         bool, str or None
             check result and the reason of fail if any
         """
+        if not self._check_matrices_are_symmetric(x, atol=atol, rtol=rtol):
+            return False, "Matrices are not symmetric"
+
         x = x.unsqueeze(0)
         id_minus_zz = get_id_minus_conjugate_z_times_z(x)
         ok = sm.is_hermitian(id_minus_zz)

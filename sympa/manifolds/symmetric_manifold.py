@@ -108,6 +108,16 @@ class SymmetricManifold(Manifold, ABC):
             reason = None
         return ok, reason
 
+    def _check_matrices_are_symmetric(self, x: torch.Tensor, *, atol=1e-5, rtol=1e-5):
+        """
+        :param x: point in the symmetric manifold of shape (2, ndims, ndims)
+        :param atol:
+        :param rtol:
+        :return: True if real and imaginary parts of the point x are symmetric matrices,
+        False otherwise
+        """
+        return sm.is_complex_symmetric(x.unsqueeze(0), atol, rtol)
+
     def proju(self, x: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
         return self.egrad2rgrad(x, u)
 

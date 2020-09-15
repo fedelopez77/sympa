@@ -138,6 +138,18 @@ def to_symmetric(y: torch.Tensor):
     return stick(real_sym, imag_sym)
 
 
+def is_complex_symmetric(x: torch.Tensor, atol=1e-05, rtol=1e-5):
+    """
+    Returns whether the complex symmetric matrices are symmetric or not
+    :param x: b x 2 x n x n
+    :param atol: parameter for allclose comparison
+    :param rtol: parameter for allclose comparison
+    """
+    real_x, imag_x = real(x), imag(x)
+    return torch.allclose(real_x, real_x.transpose(-1, -2), atol=atol, rtol=rtol) and \
+           torch.allclose(imag_x, imag_x.transpose(-1, -2), atol=atol, rtol=rtol)
+
+
 def multiply_by_i(z: torch.Tensor):
     """
     For Z = X + iY, calculates the operation i Z = i (X + iY) = -Y + iX
