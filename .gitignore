@@ -133,3 +133,5 @@ data
 ckpt
 plots
 tensorboard
+out
+job-sympa.sh
