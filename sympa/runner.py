@@ -42,6 +42,7 @@ class Runner(object):
 
             self.writer.add_scalar("embeds/avg_norm", self.model.embeds_norm().mean().item(), epoch)
             self.writer.add_scalar("train/loss", train_loss, epoch)
+            self.writer.add_scalar("train/lr", self.get_lr(), epoch)
             self.writer.add_scalar("val/distortion", val_metric, epoch)
 
             if epoch % self.args.save_epochs == 0:
@@ -121,3 +122,8 @@ class Runner(object):
         save_path = config.CKPT_PATH / f"{self.args.run_id}-best-{epoch}ep"
         log.info(f"Saving model checkpoint to {save_path}")
         torch.save({"model": self.model.state_dict(), "id2node": self.id2node}, save_path)
+
+    def get_lr(self):
+        """:return current learning rate as a float"""
+        for param_group in self.optimizer.param_groups:
+            return param_group['lr']
