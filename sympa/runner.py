@@ -9,7 +9,7 @@ from tqdm import tqdm, trange
 from sympa import config
 from sympa.losses import AverageDistortionLoss
 from sympa.metrics import AverageDistortionMetric
-from sympa.utils import get_logging
+from sympa.utils import get_logging, export_results
 
 log = get_logging()
 
@@ -58,8 +58,9 @@ class Runner(object):
         self.model.load_state_dict(best_model_state)
 
         val_metric = self.evaluate(self.validate)
-
+        export_results(self.args.results_file, self.args.run_id, {"distortion": val_metric * 100})
         log.info(f"Final Results: Distortion: {val_metric * 100:.2f}")
+
         self.save_model(best_epoch)
         self.writer.close()
 

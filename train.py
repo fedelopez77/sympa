@@ -25,12 +25,13 @@ def config_parser(parser):
     parser.add_argument("--patience", default=1000, type=int, help="Patience for scheduler.")
     parser.add_argument("--max_grad_norm", default=1000.0, type=float, help="Max gradient norm.")
     parser.add_argument("--batch_size", default=100, type=int, help="Batch size.")
-    parser.add_argument("--epochs", default=1000, type=int, help="Number of training epochs.")
+    parser.add_argument("--epochs", default=5, type=int, help="Number of training epochs.")
     parser.add_argument("--grad_accum_steps", default=1, type=int,
                         help="Number of update steps to acum before backward.")
     # Others
-    parser.add_argument("--save_epochs", default=1001, type=int, help="Export every n epochs")
-    parser.add_argument("--seed", default=42, type=int, help="Seed")
+    parser.add_argument("--results_file", default="out/results.csv", type=str, help="Exports final results to this file")
+    parser.add_argument("--save_epochs", default=1001, type=int, help="Exports every n epochs")
+    parser.add_argument("--seed", default=-1, type=int, help="Seed")
 
 
 def get_model(args):

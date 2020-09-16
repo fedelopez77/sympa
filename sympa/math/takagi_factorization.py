@@ -1,5 +1,6 @@
 
 import torch
+from sympa.config import DEVICE
 import sympa.math.symmetric_math as sm
 from sympa.utils import row_sort, assert_all_close, get_logging
 
@@ -141,8 +142,9 @@ def _get_z2(a: torch.Tensor, z1: torch.Tensor):
     real_b, real_z2 = torch.symeig(real_w, eigenvectors=True)               # real_b: b x n, z2: b x n x n
 
     # assert that real_z2 is orthogonal: it checks only on the first and last pairs of tensors for simplicity
-    assert torch.allclose(torch.sum(real_z2[:, :, 0] * real_z2[:, :, 1]), torch.Tensor(0))
-    assert torch.allclose(torch.sum(real_z2[:, :, -2] * real_z2[:, :, -1]), torch.Tensor(0))
+    zero = torch.Tensor(0).to(DEVICE)
+    assert torch.allclose(torch.sum(real_z2[:, :, 0] * real_z2[:, :, 1]), zero)
+    assert torch.allclose(torch.sum(real_z2[:, :, -2] * real_z2[:, :, -1]), zero)
 
     # build Im(B) = Z2^T Im(W) Z2
     imag_b = real_z2.transpose(-1, -2).bmm(sm.imag(w)).bmm(real_z2)     # b x n x n

@@ -3,6 +3,9 @@ import torch
 import numpy as np
 import logging
 import sys
+from datetime import datetime
+import pandas as pd
+from pathlib import Path
 from sympa.config import EPS
 
 
@@ -43,3 +46,12 @@ def row_sort(x, indexes):
 
 def assert_all_close(a, b, factor=1):
     return torch.all((a - b).abs() < EPS[torch.float32] * factor)
+
+
+def export_results(results_file: str, run_id: str, results: dict):
+    out = {"run_id": [run_id], "timestamp": datetime.now().strftime("%Y%m%d%H%M%S")}
+    for k, v in results.items():
+        out[k] = [v]
+
+    file = Path(results_file)
+    pd.DataFrame.from_dict(out).to_csv(file, mode="a", header=not file.exists())
