@@ -1,7 +1,9 @@
 
 import torch
 import sympa.math.symmetric_math as sm
-from sympa.utils import row_sort, assert_all_close
+from sympa.utils import row_sort, assert_all_close, get_logging
+
+log = get_logging()
 
 
 def takagi_factorization(a: torch.Tensor):
@@ -230,4 +232,7 @@ def s_transpose_a_s_equals_diag(s, a, diagonal):
     :param s, a, diagonal: b x 2 x n x n
     """
     s_transpose_a_s = sm.bmm3(sm.transpose(s), a, s)
-    return assert_all_close(s_transpose_a_s, diagonal)
+    ok = assert_all_close(s_transpose_a_s, diagonal)
+    if not ok:
+        log.info(f"s_transpose_a_s:{s_transpose_a_s}\n\ndiagonal:{diagonal}\n\ndiff: {(s_transpose_a_s - diagonal).abs()}")
+    return ok

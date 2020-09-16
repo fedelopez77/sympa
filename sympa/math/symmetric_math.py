@@ -218,6 +218,7 @@ def positive_conjugate_projection(y: torch.Tensor):
     3) Y_tilde = SD_tildeS^-1
 
     :param y: b x n x n. PRE: Each matrix must be symmetric
+
     """
     eigenvalues, s = symeig(y)
     eigenvalues_tilde = torch.clamp(eigenvalues, min=EPS[y.dtype])
@@ -229,7 +230,7 @@ def positive_conjugate_projection(y: torch.Tensor):
     batch_wise_mask = torch.all(eigenvalues > EPS[y.dtype], dim=-1, keepdim=True)    # True means it must not be projected
     mask = batch_wise_mask.unsqueeze(-1).expand_as(y)
 
-    return torch.where(mask, y, y_tilde)
+    return torch.where(mask, y, y_tilde), batch_wise_mask
 
 
 def symeig(y: torch.Tensor):

@@ -5,6 +5,9 @@ from sympa.manifolds.upper_half import UpperHalfManifold
 from sympa.math import symmetric_math as sm
 from sympa.math.caley_transform import caley_transform, inverse_caley_transform
 from sympa.math.takagi_factorization import takagi_factorization
+from sympa.utils import get_logging
+
+log = get_logging()
 
 
 class BoundedDomainManifold(SymmetricManifold):
@@ -73,8 +76,11 @@ class BoundedDomainManifold(SymmetricManifold):
         1) Z = SDS^-1
         2) D_tilde = clamp(D, max=1 - epsilon)
         3) Z_tilde = Ŝ D_tilde S^*
+
+        :param z: points to be projected: (b, 2, n, n)
         """
-        # TODO: what if Z is not even symmetric? Impose symmetry?
+        z = super().projx(z)
+
         eigenvalues, s = takagi_factorization(z)
         eigenvalues_tilde = torch.clamp(eigenvalues, max=1 - sm.EPS[z.dtype])
 
@@ -87,6 +93,9 @@ class BoundedDomainManifold(SymmetricManifold):
         # This prevents modifying values due to numerical instabilities/floating point ops
         batch_wise_mask = torch.all(eigenvalues < 1 - sm.EPS[z.dtype], dim=-1, keepdim=True)
         already_in_space_mask = batch_wise_mask.unsqueeze(-1).unsqueeze(-1).expand_as(z)
+
+        projected = len(z) - sum(batch_wise_mask).item()
+        log.debug(f"projx: projected points: {projected}/{len(z)} ({projected / len(z) * 100:.2f}%)")
 
         return torch.where(already_in_space_mask, z, z_tilde)
 

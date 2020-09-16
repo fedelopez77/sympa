@@ -118,6 +118,15 @@ class SymmetricManifold(Manifold, ABC):
         """
         return sm.is_complex_symmetric(x.unsqueeze(0), atol, rtol)
 
+    def projx(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Project point :math:`x` on the manifold.
+        Ensures that the point x is made of symmetric matrices
+
+        :param x: points to be projected: (b, 2, n, n)
+        """
+        return sm.to_symmetric(x)
+
     def proju(self, x: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
         return self.egrad2rgrad(x, u)
 

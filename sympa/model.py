@@ -5,11 +5,12 @@ from sympa import config
 import geoopt as gt
 from sympa.manifolds import BoundedDomainManifold, UpperHalfManifold
 from sympa.math import symmetric_math as smath
+import abc
 
 log = get_logging()
 
 
-class Embeddings(nn.Module):
+class Embeddings(nn.Module, abc.ABC):
     """Abstract Embedding layer that operates with embeddings as a Manifold parameter"""
 
     def __init__(self, num_embeddings, embedding_dim, manifold, _embeds):
@@ -39,6 +40,18 @@ class Embeddings(nn.Module):
         with torch.no_grad():
             self.embeds.data = self.manifold.projx(self.embeds.data)
 
+    def check_all_points(self):
+        for i in range(len(self.embeds)):
+            point = self.embeds.data[i]
+            ok, reason = self.manifold.check_point_on_manifold(point, explain=True)
+            if not ok:
+                return False, point, reason
+        return True, None, None
+
+    @abc.abstractmethod
+    def norm(self):
+        pass
+
 
 class ComplexSymmetricMatrixEmbeddings(Embeddings):
 
@@ -53,9 +66,13 @@ class ComplexSymmetricMatrixEmbeddings(Embeddings):
         :param embedding_dim: dimensionality of matrix embeddings.
         :param manifold: UpperHalfManifold or BoundedDomainManifold
         """
-        epsilon = config.INIT_EPS / 10
-        _embeds = manifold.random(num_embeddings, epsilon=epsilon, top=config.INIT_EPS)
+        _embeds = manifold.random(num_embeddings, from_=-config.INIT_EPS, to=config.INIT_EPS)
         super().__init__(num_embeddings, embedding_dim, manifold, _embeds)
+
+    def norm(self):
+        points = self.embeds.data
+        points = points.reshape(len(points), -1)
+        return points.norm(dim=-1)
 
 
 class VectorEmbeddings(Embeddings):
@@ -64,6 +81,9 @@ class VectorEmbeddings(Embeddings):
         _embeds = torch.Tensor(num_embeddings, embedding_dim).uniform_(-init_eps, init_eps)
         super().__init__(num_embeddings, embedding_dim, manifold, _embeds)
         self.proj_embeds()
+
+    def norm(self):
+        return self.embeds.data.norm(dim=-1)
 
 
 class Model(nn.Module):
@@ -133,3 +153,9 @@ class Model(nn.Module):
         src_index = torch.LongTensor(src).to(input_index.device)
         dst_index = torch.LongTensor(dst).to(input_index.device)
         return src_index, dst_index
+
+    def check_all_points(self):
+        return self.embeddings.check_all_points()
+
+    def embeds_norm(self):
+        return self.embeddings.norm()

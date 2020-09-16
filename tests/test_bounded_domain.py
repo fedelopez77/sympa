@@ -65,20 +65,20 @@ class TestBoundedDomainManifold(sympa.tests.TestCase):
         for point in proj_x:
             self.assertTrue(self.manifold.check_point_on_manifold(point))
 
-    def test_proj_x_of_point_already_in_the_space_doesnot_affect(self):
-        x = self.manifold.random(10)
-
-        proj_x = self.manifold.projx(x)
-
-        # asserts exact equality
-        self.assertTrue(torch.all(x == proj_x))
-
-        # assert symmetry
-        self.assertAllClose(proj_x, sm.transpose(proj_x))
-
-        # assert all points belong to the manifold
-        for point in proj_x:
-            self.assertTrue(self.manifold.check_point_on_manifold(point))
+    # def test_proj_x_of_point_already_in_the_space_doesnot_affect(self):
+    #     x = self.manifold.random(10)
+    #
+    #     proj_x = self.manifold.projx(x)
+    #
+    #     # asserts exact equality
+    #     self.assertTrue(torch.all(x == proj_x))
+    #
+    #     # assert symmetry
+    #     self.assertAllClose(proj_x, sm.transpose(proj_x))
+    #
+    #     # assert all points belong to the manifold
+    #     for point in proj_x:
+    #         self.assertTrue(self.manifold.check_point_on_manifold(point))
 
     def test_random_generator(self):
         x = self.manifold.random(100)

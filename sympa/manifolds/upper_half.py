@@ -2,6 +2,9 @@ import torch
 from geoopt.manifolds.base import Manifold
 from sympa.manifolds import SymmetricManifold
 from sympa.math import symmetric_math as sm
+from sympa.utils import get_logging
+
+log = get_logging()
 
 
 class UpperHalfManifold(SymmetricManifold):
@@ -42,9 +45,9 @@ class UpperHalfManifold(SymmetricManifold):
         # y = sm.imag(x)
         # return y.bmm(u).bmm(y)
 
-    def projx(self, x: torch.Tensor) -> torch.Tensor:
+    def projx(self, z: torch.Tensor) -> torch.Tensor:
         """
-        Project point :math:`x` on the manifold.
+        Project point :math:`z` on the manifold.
 
         In this space, we need to ensure that Y = Im(X) is positive definite.
         Since the matrix Y is symmetric, it is possible to diagonalize it.
@@ -52,14 +55,22 @@ class UpperHalfManifold(SymmetricManifold):
         that are <=0 in the diagonal to an epsilon, and then restore the matrix back into non-diagonal form using
         the base change matrix that was obtained from the diagonalization.
 
-        Steps to project: Y = Im(x)
+        Steps to project: Y = Im(z)
         1) Y = SDS^-1
         2) D_tilde = clamp(D, min=epsilon)
         3) Y_tilde = SD_tildeS^-1
+
+        :param z: points to be projected: (b, 2, n, n)
         """
-        y = sm.imag(x)
-        y_tilde = sm.positive_conjugate_projection(y)
-        return sm.stick(sm.real(x), y_tilde)
+        z = super().projx(z)
+
+        y = sm.imag(z)
+        y_tilde, batchwise_mask = sm.positive_conjugate_projection(y)
+
+        projected = len(z) - sum(batchwise_mask).item()
+        log.debug(f"projx: projected points: {projected}/{len(z)} ({projected / len(z) * 100:.2f}%)")
+
+        return sm.stick(sm.real(z), y_tilde)
 
     def _check_point_on_manifold(self, x: torch.Tensor, *, atol=1e-5, rtol=1e-5):
         """

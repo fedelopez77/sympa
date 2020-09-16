@@ -25,7 +25,6 @@ class Runner(object):
         self.validate = DataLoader(point_ids, sampler=SequentialSampler(point_ids), batch_size=args.batch_size)
         self.loss = AverageDistortionLoss(distances)
         self.metric = AverageDistortionMetric(distances)
-
         self.args = args
         self.writer = SummaryWriter(config.TENSORBOARD_PATH / args.run_id)
 
@@ -41,6 +40,7 @@ class Runner(object):
             log.info(f"Results ep {epoch}: tr loss: {train_loss:.1f}, "
                      f"val avg distortion: {val_metric * 100:.2f}")
 
+            self.writer.add_scalar("embeds/avg_norm", self.model.embeds_norm().mean().item(), epoch)
             self.writer.add_scalar("train/loss", train_loss, epoch)
             self.writer.add_scalar("val/distortion", val_metric, epoch)
 
@@ -69,7 +69,14 @@ class Runner(object):
         self.model.train()
         self.model.zero_grad()
         self.optimizer.zero_grad()
-        for step, batch in enumerate(tqdm(train_split, desc=f"epoch_{epoch_num}")):
+        for step, batch in enumerate(train_split):     # enumerate(tqdm(train_split, desc=f"epoch_{epoch_num}")):
+
+            # before doing anything in each iteration, it checks that all the points are in the manifold
+            all_points_ok, outside_point, reason = self.model.check_all_points()
+            if not all_points_ok:
+                raise AssertionError(f"Point outside manifold. Reason: {reason}\n{outside_point}")
+            ####
+
             batch_points = batch[0].to(config.DEVICE)
 
             src_index, dst_index, src_embeds, dst_embeds = self.model(batch_points)
@@ -97,7 +104,7 @@ class Runner(object):
     def evaluate(self, eval_split):
         self.model.eval()
         total_distortion = []
-        for batch in tqdm(eval_split, desc="Evaluating"):
+        for batch in eval_split:        # tqdm(eval_split, desc="Evaluating"):
             batch_points = batch[0].to(config.DEVICE)
             with torch.no_grad():
                 src_index, dst_index, src_embeds, dst_embeds = self.model(batch_points)
