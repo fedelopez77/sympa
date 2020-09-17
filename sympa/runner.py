@@ -75,7 +75,7 @@ class Runner(object):
         self.model.zero_grad()
         self.optimizer.zero_grad()
 
-        for step, batch in enumerate(train_split): # enumerate(tqdm(train_split, desc=f"epoch_{epoch_num}")):
+        for step, batch in enumerate(tqdm(train_split, desc=f"epoch_{epoch_num}")):  # enumerate(train_split):
             batch_points = batch[0].to(config.DEVICE)
 
             manifold_distances = self.model(batch_points)

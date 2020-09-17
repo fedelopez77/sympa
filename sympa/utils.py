@@ -55,3 +55,7 @@ def export_results(results_file: str, run_id: str, results: dict):
 
     file = Path(results_file)
     pd.DataFrame.from_dict(out).to_csv(file, mode="a", header=not file.exists())
+
+
+def is_prime(a):
+    return all(a % i for i in range(2, a))

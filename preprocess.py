@@ -1,5 +1,6 @@
 import argparse
 import networkx as nx
+from networkx.generators import expanders, social
 import torch
 import sympa.utils as utils
 import sympa.config as config
@@ -9,12 +10,43 @@ log = utils.get_logging()
 
 def get_graph(args):
     if args.graph == "grid":
-        nodes = int(args.grid_nodes ** 0.5)
-        graph = nx.grid_2d_graph(nodes, nodes)
-        graph.name = f"grid_{nodes}x{nodes}"
+        dims = args.grid_dims
+        nodes = round(args.nodes ** (1 / dims))
+        shape = [nodes] * dims
+        graph = nx.grid_graph(dim=shape)
+        graph.name = f"grid{dims}d_{args.nodes}"
     elif args.graph == "tree":
         graph = nx.balanced_tree(args.tree_branching, args.tree_height)
         graph.name = f"tree_branch{args.tree_branching}_height{args.tree_height}"
+
+    # expanders
+    elif args.graph == "expander-margulis":
+        graph = expanders.margulis_gabber_galil_graph(args.nodes)
+        graph.name = f"expander-margulis-{args.nodes}"
+    elif args.graph == "expander-chordal":
+        if not utils.is_prime(args.nodes):
+            raise ValueError(f"args.nodes must be prime for {args.graph} graph")
+        graph = expanders.chordal_cycle_graph(args.nodes)
+        graph.name = f"expander-chordal-{args.nodes}"
+    elif args.graph == "expander-paley":
+        if not utils.is_prime(args.nodes):
+            raise ValueError(f"args.nodes must be prime for {args.graph} graph")
+        graph = expanders.paley_graph(args.nodes)
+        graph.name = f"expander-paley-{args.nodes}"
+
+    # social networks
+    elif args.graph == "social-karate":
+        graph = social.karate_club_graph()
+        graph.name = f"social-karate"
+    elif args.graph == "social-davis":
+        graph = social.davis_southern_women_graph()
+        graph.name = f"social-davis"
+    elif args.graph == "social-florentine":
+        graph = social.florentine_families_graph()
+        graph.name = f"social-florentine"
+    elif args.graph == "social-miserables":
+        graph = social.les_miserables_graph()
+        graph.name = f"social-miserables"
     else:
         raise ValueError(f"--graph={args.graph} not recognized")
     return graph
@@ -53,9 +85,10 @@ def build_triplets(graph, node2id):
 def main():
     parser = argparse.ArgumentParser(description="preprocess.py")
     parser.add_argument("--run_id", required=True, help="Id of run to store data")
-    parser.add_argument("--graph", default="grid", help="Graph type: grid or tree")
-    parser.add_argument("--grid_nodes", default=36, type=int,
-                        help="if --graph=grid it will create a grid of n x n with n = int(sqrt(grid_nodes))")
+    parser.add_argument("--graph", default="grid", help="Graph type")
+    parser.add_argument("--nodes", default=10, type=int,
+                        help="if --graph=grid it will create a grid of dims dimensions with n = int(nodes^(1/dims))")
+    parser.add_argument("--grid_dims", default=3, type=int, help="if --graph=grid, number of dimensions")
     parser.add_argument("--tree_branching", default=3, type=int, help="if --graph=tree, branching factor of tree")
     parser.add_argument("--tree_height", default=3, type=int, help="if --graph=tree, height of tree")
 
@@ -79,6 +112,7 @@ def main():
     node2id = {v: k for k, v in id2node.items()}
     log.info(f"Building triplets for {len(nodes)} nodes")
     triplets = build_triplets(graph, node2id)
+    log.info(f"Total triplets: {len(triplets)}")
 
     log.info(f"Saving to {run_path / config.PREPROCESSED_FILE}")
     torch.save(
