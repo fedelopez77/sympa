@@ -104,6 +104,7 @@ def main():
 
     log.info(f"Building graph: {args.graph}")
     graph = get_graph(args)
+    log.info(nx.info(graph))
     log.info("Plotting graph")
     plot_graph(graph, run_path)
 
