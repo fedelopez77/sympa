@@ -47,21 +47,10 @@ class BoundedDomainManifold(SymmetricManifold):
 
         If you have a function f(z) on Hn, then the gradient is the  A * grad_eucl(f(z)) * A,
         where A = (Id - \overline{Z}Z)
-
-        Parameters
-        ----------
-        x torch.Tensor
-            point on the manifold
-        u torch.Tensor
-            gradient to be projected
-
-        Returns
-        -------
-        torch.Tensor
-            grad vector in the Riemannian manifold
+        :param z: point on the manifold. Shape: (b, 2, n, n)
+        :param u: gradient to be projected: Shape: same than z
+        :return grad vector in the Riemannian manifold. Shape: same than z
         """
-        # TODO: Check this!!!!!!!!!!!!!!!!!!
-        # Assuming that the gradient is a tensor of b x 2 x n x n and it has a real and an imaginary part:
         a = get_id_minus_conjugate_z_times_z(z)
         a_times_grad_times_a = sm.bmm3(a, u, a)
         return a_times_grad_times_a
@@ -94,8 +83,7 @@ class BoundedDomainManifold(SymmetricManifold):
         batch_wise_mask = torch.all(eigenvalues < 1 - sm.EPS[z.dtype], dim=-1, keepdim=True)
         already_in_space_mask = batch_wise_mask.unsqueeze(-1).unsqueeze(-1).expand_as(z)
 
-        projected = len(z) - sum(batch_wise_mask).item()
-        log.debug(f"projx: projected points: {projected}/{len(z)} ({projected / len(z) * 100:.2f}%)")
+        self.projected_points += len(z) - sum(batch_wise_mask).item()
 
         return torch.where(already_in_space_mask, z, z_tilde)
 

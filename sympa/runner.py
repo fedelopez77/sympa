@@ -15,16 +15,16 @@ log = get_logging()
 
 
 class Runner(object):
-    def __init__(self, model, optimizer, scheduler, id2node, distances, args):
+    def __init__(self, model, optimizer, scheduler, id2node, triplets, args):
         self.model = model
         self.optimizer = optimizer
         self.scheduler = scheduler
         self.id2node = id2node
-        point_ids = TensorDataset(torch.arange(0, len(self.id2node), dtype=torch.long))
-        self.train = DataLoader(point_ids, sampler=RandomSampler(point_ids), batch_size=args.batch_size)
-        self.validate = DataLoader(point_ids, sampler=SequentialSampler(point_ids), batch_size=args.batch_size)
-        self.loss = AverageDistortionLoss(distances)
-        self.metric = AverageDistortionMetric(distances)
+        triplets = TensorDataset(triplets)
+        self.train = DataLoader(triplets, sampler=RandomSampler(triplets), batch_size=args.batch_size)
+        self.validate = DataLoader(triplets, sampler=SequentialSampler(triplets), batch_size=args.batch_size)
+        self.loss = AverageDistortionLoss()
+        self.metric = AverageDistortionMetric()
         self.args = args
         self.writer = SummaryWriter(config.TENSORBOARD_PATH / args.run_id)
 
@@ -44,6 +44,8 @@ class Runner(object):
             self.writer.add_scalar("train/loss", train_loss, epoch)
             self.writer.add_scalar("train/lr", self.get_lr(), epoch)
             self.writer.add_scalar("val/distortion", val_metric, epoch)
+            if hasattr(self.model.manifold, 'projected_points'):
+                self.writer.add_scalar("train/projected_points", self.model.manifold.projected_points, epoch)
 
             if epoch % self.args.save_epochs == 0:
                 self.save_model(epoch)
@@ -66,24 +68,20 @@ class Runner(object):
         self.writer.close()
 
     def train_epoch(self, train_split, epoch_num):
+        self.check_points_in_manifold()
         tr_loss = 0.0
         avg_grad_norm = 0.0
         self.model.train()
         self.model.zero_grad()
         self.optimizer.zero_grad()
-        for step, batch in enumerate(train_split):     # enumerate(tqdm(train_split, desc=f"epoch_{epoch_num}")):
 
-            # before doing anything in each iteration, it checks that all the points are in the manifold
-            all_points_ok, outside_point, reason = self.model.check_all_points()
-            if not all_points_ok:
-                raise AssertionError(f"Point outside manifold. Reason: {reason}\n{outside_point}")
-            ####
-
+        for step, batch in enumerate(train_split): # enumerate(tqdm(train_split, desc=f"epoch_{epoch_num}")):
             batch_points = batch[0].to(config.DEVICE)
 
-            src_index, dst_index, src_embeds, dst_embeds = self.model(batch_points)
+            manifold_distances = self.model(batch_points)
+            graph_distances = batch_points[:, -1]
 
-            loss = self.loss.calculate_loss(src_index, dst_index, src_embeds, dst_embeds, self.model.distance)
+            loss = self.loss.calculate_loss(graph_distances, manifold_distances)
             loss = loss / self.args.grad_accum_steps
             loss.backward()
 
@@ -109,9 +107,9 @@ class Runner(object):
         for batch in eval_split:        # tqdm(eval_split, desc="Evaluating"):
             batch_points = batch[0].to(config.DEVICE)
             with torch.no_grad():
-                src_index, dst_index, src_embeds, dst_embeds = self.model(batch_points)
-                distortion = self.metric.calculate_metric(src_index, dst_index, src_embeds, dst_embeds,
-                                                          self.model.distance)
+                manifold_distances = self.model(batch_points)
+                graph_distances = batch_points[:, -1]
+                distortion = self.metric.calculate_metric(graph_distances, manifold_distances)
             total_distortion.extend(distortion.tolist())
 
         avg_distortion = mean(total_distortion)
@@ -127,3 +125,9 @@ class Runner(object):
         """:return current learning rate as a float"""
         for param_group in self.optimizer.param_groups:
             return param_group['lr']
+
+    def check_points_in_manifold(self):
+        """it checks that all the points are in the manifold"""
+        all_points_ok, outside_point, reason = self.model.check_all_points()
+        if not all_points_ok:
+            raise AssertionError(f"Point outside manifold. Reason: {reason}\n{outside_point}")

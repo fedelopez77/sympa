@@ -24,26 +24,22 @@ class UpperHalfManifold(SymmetricManifold):
     def __init__(self, ndim=1):
         super().__init__(ndim=ndim)
 
-    def egrad2rgrad(self, x: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
+    def egrad2rgrad(self, z: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
         """
         Transform gradient computed using autodiff to the correct Riemannian gradient for the point :math:`x`.
 
         If you have a function f(z) on Hn, then the gradient is the  y * grad_eucl(f(z)) * y,
         where y is the imaginary part of z, and multiplication is just matrix multiplication.
 
-        :param x: point on the manifold. Shape: (b, 2, n, n)
-        :param u: gradient to be projected: Shape: same than x
-        :return grad vector in the Riemannian manifold. Shape: same than x
+        :param z: point on the manifold. Shape: (b, 2, n, n)
+        :param u: gradient to be projected: Shape: same than z
+        :return grad vector in the Riemannian manifold. Shape: same than z
         """
-        # TODO: CHECK THIS!!!!!!!!!!
-        # TODO: If the gradient has also an imaginary part and a real part, this will fail. In that case it would be:
         real_grad, imag_grad = sm.real(u), sm.imag(u)
-        y = sm.imag(x)
+        y = sm.imag(z)
         real_grad = y.bmm(real_grad).bmm(y)
         imag_grad = y.bmm(imag_grad).bmm(y)
         return sm.stick(real_grad, imag_grad)
-        # y = sm.imag(x)
-        # return y.bmm(u).bmm(y)
 
     def projx(self, z: torch.Tensor) -> torch.Tensor:
         """
@@ -67,36 +63,26 @@ class UpperHalfManifold(SymmetricManifold):
         y = sm.imag(z)
         y_tilde, batchwise_mask = sm.positive_conjugate_projection(y)
 
-        projected = len(z) - sum(batchwise_mask).item()
-        log.debug(f"projx: projected points: {projected}/{len(z)} ({projected / len(z) * 100:.2f}%)")
+        self.projected_points += len(z) - sum(batchwise_mask).item()
 
         return sm.stick(sm.real(z), y_tilde)
 
-    def _check_point_on_manifold(self, x: torch.Tensor, *, atol=1e-5, rtol=1e-5):
+    def _check_point_on_manifold(self, z: torch.Tensor, *, atol=1e-5, rtol=1e-5):
         """
         Util to check point lies on the manifold.
         For the Upper Half Space Model, that implies that Im(x) is positive definite.
 
-        x is assumed to be one complex matrix with the shape 2 x ndim x ndim
+        z is assumed to be one complex matrix with the shape 2 x ndim x ndim
 
-        Parameters
-        ----------
-        x torch.Tensor
-            point on the manifold
-        atol: float
-            absolute tolerance as in :func:`numpy.allclose`
-        rtol: float
-            relative tolerance as in :func:`numpy.allclose`
-
-        Returns
-        -------
-        bool, str or None
-            check result and the reason of fail if any
+        :param z: point on the manifold. (b, 2, n, n)
+        :param atol: float, absolute tolerance as in :func:`torch.allclose`
+        :param rtol: float, relative tolerance as in :func:`torch.allclose`
+        :return bool, str or bool, None: check result and the reason of fail if any
         """
-        if not self._check_matrices_are_symmetric(x, atol=atol, rtol=rtol):
+        if not self._check_matrices_are_symmetric(z, atol=atol, rtol=rtol):
             return False, "Matrices are not symmetric"
 
-        imag_x = sm.imag(x.unsqueeze(0))
+        imag_x = sm.imag(z.unsqueeze(0))
         ok = torch.det(imag_x) > 0
         if not ok:
             reason = "'x' determinant is not > 0"
@@ -119,48 +105,3 @@ class UpperHalfManifold(SymmetricManifold):
 
         real_part = sm.squared_to_symmetric(torch.Tensor(size[0], self.ndim, self.ndim).uniform_(from_, to))
         return sm.stick(real_part, imag_part).to(device=device, dtype=dtype)
-
-
-def generate_matrix_in_upper_half_space(points: int, dims: int, **kwargs):
-    """
-    Generates 'points' matrices in the Upper Half Space Model of 'dims' dimensions.
-    This matrices already belong to the UHSM so they do not need to be projected.
-
-    The imaginary part is generated in a way that if the matrix A is 2x2 with [[a1, b1], [b1, a2]]
-     - a_i > 0
-     - a1 * a2 - b1^2 > 0
-    So the determinant of A is > 0
-    For this, we impose: |b_i| < sqrt(a1 * a2) / 2
-
-    The real part can be any symmetric matrix
-
-    :param points: amount of matrices that will be in the batch
-    :param dims: number of dimensions of the matrix
-    :param epsilon: a_i values will be >= epsilon
-    :param top: samples numbers from a Uniform distribution U(epsilon, top)
-    :return: tensor of points x 2 x dims x dims
-    """
-    epsilon = kwargs.pop("epsilon", 0.001)
-    top = kwargs.pop("top", 0.01)
-
-    imag = torch.Tensor(points, dims, dims).uniform_(epsilon, top)
-    for p in range(points):
-        for i in range(dims):
-            for j in range(i + 1, dims):
-                a_i = imag[p, i, i]
-                a_j = imag[p, j, j]
-                threshold = torch.sqrt(a_i * a_j) / 2
-                b_ij = imag[p, i, j]
-                if torch.abs(b_ij) < threshold:         # condition is satisfied
-                    imag[p, j, i] = b_ij                # makes matrix symmetric
-                else:
-                    abs_max_val = threshold * 0.9
-                    imag[p, i, j] = imag[p, j, i] = torch.Tensor(1).uniform_(-abs_max_val, abs_max_val)
-
-        # checks that all the "sub" determinants in the matrix are > 0
-        for k in range(1, dims + 1):
-            sub_det = torch.det(imag[p, :k, :k])
-            assert sub_det > 0
-
-    real = sm.squared_to_symmetric(torch.Tensor(points, dims, dims).uniform_(-top, top))
-    return sm.stick(real, imag)

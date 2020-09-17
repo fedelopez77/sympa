@@ -24,8 +24,8 @@ def config_parser(parser):
     parser.add_argument("--weight_decay", default=0.00, type=float, help="L2 Regularization.")
     parser.add_argument("--patience", default=25, type=int, help="Patience for scheduler.")
     parser.add_argument("--max_grad_norm", default=1000.0, type=float, help="Max gradient norm.")
-    parser.add_argument("--batch_size", default=100, type=int, help="Batch size.")
-    parser.add_argument("--epochs", default=1000, type=int, help="Number of training epochs.")
+    parser.add_argument("--batch_size", default=1000, type=int, help="Batch size.")
+    parser.add_argument("--epochs", default=10, type=int, help="Number of training epochs.")
     parser.add_argument("--grad_accum_steps", default=1, type=int,
                         help="Number of update steps to acum before backward.")
     # Others
@@ -58,7 +58,7 @@ def main():
     log.info(f"Loading data from {data_path}")
     data = torch.load(data_path)
     id2node = data["id2node"]
-    distances = data["distances"].to(config.DEVICE)
+    triplets = torch.LongTensor(list(data["triplets"])).to(config.DEVICE)
 
     args.num_points = len(id2node)
     model = get_model(args)
@@ -70,7 +70,7 @@ def main():
     log.info(f"Points: {args.num_points}, dims: {args.dims}, number of parameters: {n_params}")
     log.info(model)
 
-    runner = Runner(model, optimizer, scheduler=scheduler, id2node=id2node, distances=distances, args=args)
+    runner = Runner(model, optimizer, scheduler=scheduler, id2node=id2node, triplets=triplets, args=args)
     runner.run()
     log.info("Done!")
 

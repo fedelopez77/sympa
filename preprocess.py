@@ -30,14 +30,24 @@ def plot_graph(graph, path):
     plt.savefig(path / (graph.name + ".png"))
 
 
-def get_distances(graph):
-    nodes = list(graph.nodes())
-    dists = torch.zeros((len(nodes), len(nodes)), dtype=torch.float)
-    for i, src in enumerate(nodes):
-        for j, dst in enumerate(nodes):
-            d = nx.shortest_path_length(graph, src, dst)
-            dists[i, j] = d
-    return dists, nodes
+def build_triplets(graph, node2id):
+    """
+    Builds triplets of (src, dst, distance) for each node in the graph, to all other connected nodes.
+
+    :param graph:
+    :param node2id:
+    :return: list of triplets
+    """
+    triplets = set()
+    lengths = dict(nx.all_pairs_shortest_path_length(graph))
+    for src, reachable_nodes in lengths.items():
+        for dst, distance in reachable_nodes.items():
+            if distance > 0:
+                src_id = node2id[src]
+                dst_id = node2id[dst]
+                if (dst_id, src_id, distance) not in triplets:  # checks that the symmetric triplets is not there
+                    triplets.add((src_id, dst_id, distance))
+    return triplets
 
 
 def main():
@@ -59,15 +69,21 @@ def main():
     run_path = config.PREP_PATH / args.run_id
     run_path.mkdir(parents=True, exist_ok=True)
 
+    log.info(f"Building graph: {args.graph}")
     graph = get_graph(args)
+    log.info("Plotting graph")
     plot_graph(graph, run_path)
 
-    distances, nodes = get_distances(graph)
+    nodes = list(graph.nodes())
     id2node = {i: node for i, node in enumerate(nodes)}
+    node2id = {v: k for k, v in id2node.items()}
+    log.info(f"Building triplets for {len(nodes)} nodes")
+    triplets = build_triplets(graph, node2id)
 
+    log.info(f"Saving to {run_path / config.PREPROCESSED_FILE}")
     torch.save(
         {
-            "distances": distances,
+            "triplets": triplets,
             "id2node": id2node
         },
         run_path / config.PREPROCESSED_FILE

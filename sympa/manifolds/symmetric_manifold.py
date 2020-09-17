@@ -28,6 +28,7 @@ class SymmetricManifold(Manifold, ABC):
         """
         super().__init__()
         self.ndim = ndim
+        self.projected_points = 0
 
     def dist(self, z1: torch.Tensor, z2: torch.Tensor, *, keepdim=False) -> torch.Tensor:
         """

@@ -105,54 +105,29 @@ class Model(nn.Module):
                                                                manifold=BoundedDomainManifold(args.dims))
         self.manifold = self.embeddings.manifold
 
-    def forward(self, input_index):
+    def forward(self, input_triplet):
         """
-        :param input_index: tensor with indexes to process: b
-        :return: src and dst indexes. Src and dst embeddings
+        Calculates and returns the distance in the manifold of the points given as a
+        triplet of the form: (src_id, dst_id, graph_distance)
+        'graph_distance' is ignored in this case.
+
+        :param input_triplet: tensor with indexes of embeddings to process. (b, 3)
+        :return: distances b
         """
-        src_index, dst_index = self.get_src_and_dst_from_seq(input_index)
+        src_index, dst_index = input_triplet[:, 0], input_triplet[:, 1]
         src_embeds = self.embeddings(src_index)                       # b x 2 x n x n or b x n
         dst_embeds = self.embeddings(dst_index)                       # b x 2 x n x n
 
-        return src_index, dst_index, src_embeds, dst_embeds
+        distances = self.distance(src_embeds, dst_embeds)
+        return distances
 
     def distance(self, src_embeds, dst_embeds):
         """
         :param src_embeds, dst_embeds: embeddings of nodes in the manifold.
-        In symmetric spaces, it will be of the shape b x 2 x n x n. In Euclidean space it will be b x n
+        In complex matrix spaces, it will be of the shape b x 2 x n x n. In Vector spaces it will be b x n
         :return: tensor of b with distances from each src to each dst
         """
         return self.manifold.dist(src_embeds, dst_embeds)   # b x 1
-
-    def get_src_and_dst_from_seq(self, input_index):
-        """
-        :param input_index: tensor with batch of indexes of points: shape: b
-        :return: two tensors of len b * (n - 1) with the pairs src[i], dst[i] at each element i
-
-        For each point in input_index, it should compute the distance with all other nodes "greater" than the point.
-        This is implemented according to the loss equation:
-            1 <= i < j <= n
-        'input_index' is assumed to be i and this function returns the pairs (i, j) for all j > i
-
-        Example:
-            all_points = [a, b, c, d]
-            input_index = [c, a]
-            src: [c, a, a, a]
-            dst: [d, b, c, d]
-
-            input_index = [b, d]
-            src: [b, b]
-            dst: [c, d]
-        """
-        src, dst = [], []
-        for id_a in input_index.tolist():
-            for id_b in self.all_points[id_a + 1:]:
-                src.append(id_a)
-                dst.append(id_b)
-
-        src_index = torch.LongTensor(src).to(input_index.device)
-        dst_index = torch.LongTensor(dst).to(input_index.device)
-        return src_index, dst_index
 
     def check_all_points(self):
         return self.embeddings.check_all_points()
