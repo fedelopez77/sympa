@@ -87,21 +87,26 @@ class VectorEmbeddings(Embeddings):
 
 
 class Model(nn.Module):
-    """Graph embedding model that operates on different spaces"""
-    def __init__(self, args):
+    """Graph embedding model that operates on different manifolds"""
+
+    def __init__(self, id2node, args):
+        """
+        :param id2node: dict of {node_index: node_name}
+        :param args: extra arguments
+        """
         super().__init__()
 
-        self.num_points = args.num_points
-        self.all_points = list(range(self.num_points))
+        self.id2node = id2node
+        num_points = len(id2node)
         if args.model == "euclidean":
-            self.embeddings = VectorEmbeddings(args.num_points, args.dims, manifold=gt.Euclidean(1))
+            self.embeddings = VectorEmbeddings(num_points, args.dims, manifold=gt.Euclidean(1))
         elif args.model == "poincare":
-            self.embeddings = VectorEmbeddings(args.num_points, args.dims, manifold=gt.PoincareBall())
+            self.embeddings = VectorEmbeddings(num_points, args.dims, manifold=gt.PoincareBall())
         elif args.model == "upper":
-            self.embeddings = ComplexSymmetricMatrixEmbeddings(args.num_points, args.dims,
+            self.embeddings = ComplexSymmetricMatrixEmbeddings(num_points, args.dims,
                                                                manifold=UpperHalfManifold(args.dims))
         elif args.model == "bounded":
-            self.embeddings = ComplexSymmetricMatrixEmbeddings(args.num_points, args.dims,
+            self.embeddings = ComplexSymmetricMatrixEmbeddings(num_points, args.dims,
                                                                manifold=BoundedDomainManifold(args.dims))
         self.manifold = self.embeddings.manifold
 

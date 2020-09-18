@@ -35,8 +35,8 @@ def config_parser(parser):
     parser.add_argument("--seed", default=42, type=int, help="Seed")
 
 
-def get_model(args):
-    model = Model(args)
+def get_model(id2node, args):
+    model = Model(id2node, args)
     # TODO: load model if necessary
     model.to(config.DEVICE)
     return model
@@ -62,14 +62,13 @@ def main():
     id2node = data["id2node"]
     triplets = torch.LongTensor(list(data["triplets"])).to(config.DEVICE)
 
-    args.num_points = len(id2node)
-    model = get_model(args)
+    model = get_model(id2node, args)
     optimizer = RiemannianSGD(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay, stabilize=10)
     scheduler = get_scheduler(optimizer, args)
 
     log.info(f"GPU's available: {torch.cuda.device_count()}")
     n_params = sum([p.nelement() for p in model.parameters() if p.requires_grad])
-    log.info(f"Points: {args.num_points}, dims: {args.dims}, number of parameters: {n_params}")
+    log.info(f"Points: {len(id2node)}, dims: {args.dims}, number of parameters: {n_params}")
     log.info(model)
 
     runner = Runner(model, optimizer, scheduler=scheduler, id2node=id2node, triplets=triplets, args=args)
