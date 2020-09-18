@@ -33,30 +33,34 @@ class Runner(object):
         best_model_state = None
         for epoch in trange(1, self.args.epochs + 1, desc="full_train"):
             train_loss = self.train_epoch(self.train, epoch)
-            val_metric = self.evaluate(self.validate)
 
-            self.scheduler.step(val_metric)
-
-            log.info(f"Results ep {epoch}: tr loss: {train_loss:.1f}, "
-                     f"val avg distortion: {val_metric * 100:.2f}")
-
-            self.writer.add_scalar("embeds/avg_norm", self.model.embeds_norm().mean().item(), epoch)
             self.writer.add_scalar("train/loss", train_loss, epoch)
             self.writer.add_scalar("train/lr", self.get_lr(), epoch)
-            self.writer.add_scalar("val/distortion", val_metric, epoch)
+            self.writer.add_scalar("embeds/avg_norm", self.model.embeds_norm().mean().item(), epoch)
             if hasattr(self.model.manifold, 'projected_points'):
                 self.writer.add_scalar("train/projected_points", self.model.manifold.projected_points, epoch)
 
             if epoch % self.args.save_epochs == 0:
                 self.save_model(epoch)
 
-            if val_metric < best_val_metric:
-                log.info(f"Best val distortion: {val_metric * 100:.3f} at epoch {epoch}")
-                best_val_metric = val_metric
-                best_epoch = epoch
-                best_model_state = copy.deepcopy(self.model.state_dict())
-            
-            # TODO: implement early stopping
+            if epoch % self.args.val_every == 0:
+                val_metric = self.evaluate(self.validate)
+                self.writer.add_scalar("val/distortion", val_metric, epoch)
+                log.info(f"Results ep {epoch}: tr loss: {train_loss:.1f}, val avg distortion: {val_metric * 100:.2f}")
+
+                self.scheduler.step(val_metric)
+
+                if val_metric < best_val_metric:
+                    log.info(f"Best val distortion: {val_metric * 100:.3f} at epoch {epoch}")
+                    best_val_metric = val_metric
+                    best_epoch = epoch
+                    best_model_state = copy.deepcopy(self.model.state_dict())
+
+                # early stopping
+                if epoch - best_epoch >= self.args.patience * 3:
+                    log.info(f"Early stopping at epoch {epoch}!!!")
+                    break
+
         log.info(f"Final evaluation on best model from epoch {best_epoch}")
         self.model.load_state_dict(best_model_state)
 
