@@ -47,6 +47,26 @@ def get_graph(args):
     elif args.graph == "social-miserables":
         graph = social.les_miserables_graph()
         graph.name = f"social-miserables"
+
+    # graph products
+    elif args.graph == "product-cartesian":
+        dims = args.grid_dims
+        nodes = round(args.nodes ** (1 / dims))
+        shape = [nodes] * dims
+        grid = nx.grid_graph(dim=shape)
+        tree = nx.balanced_tree(args.tree_branching, args.tree_height)
+        graph = nx.cartesian_product(tree, tree)
+        graph.name = f"product-cartesian"
+    elif args.graph == "product-rooted":
+        dims = args.grid_dims
+        nodes = round(args.nodes ** (1 / dims))
+        shape = [nodes] * dims
+        grid = nx.grid_graph(dim=shape)
+        tree = nx.balanced_tree(args.tree_branching, args.tree_height)
+        # if invoked rooted_product(tree, grid, list(grid.nodes())[0]), it gives a tree of grids
+        # if invoked rooted_product(grid, tree, list(tree.nodes())[0]), it gives a grid with trees hanging
+        graph = nx.algorithms.operators.rooted_product(tree, grid, list(grid.nodes())[0])
+        graph.name = f"product-rooted"
     else:
         raise ValueError(f"--graph={args.graph} not recognized")
     return graph
