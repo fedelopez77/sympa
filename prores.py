@@ -21,8 +21,8 @@ if __name__ == '__main__':
     stds = grouped.std().rename(lambda x: x + "_std", axis="columns")
 
     means_and_stds = means.join(stds)
-    means_and_stds = means_and_stds.sort_values(by=[DISTORTION], ascending=False)
+    means_and_stds = means_and_stds.sort_values(by=[DISTORTION], ascending=True)
 
     path = Path(args.file)
-    new_path = path.parent / f"AA-{path.name[:-4]}.csv"
+    new_path = path.parent / f"AA-{path.name}.csv"
     means_and_stds.to_csv(str(new_path))
