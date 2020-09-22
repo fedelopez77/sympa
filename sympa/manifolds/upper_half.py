@@ -18,7 +18,7 @@ class UpperHalfManifold(SymmetricManifold):
 
     ndim = 1
     reversible = False
-    name = "Upper Half Space"
+    name = "UpperHalfSpace"
     __scaling__ = Manifold.__scaling__.copy()
 
     def __init__(self, ndim=1):

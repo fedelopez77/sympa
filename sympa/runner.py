@@ -9,7 +9,7 @@ from tqdm import tqdm, trange
 from sympa import config
 from sympa.losses import AverageDistortionLoss
 from sympa.metrics import AverageDistortionMetric
-from sympa.utils import get_logging, export_results
+from sympa.utils import get_logging, write_results_to_file
 
 log = get_logging()
 
@@ -65,7 +65,7 @@ class Runner(object):
         self.model.load_state_dict(best_model_state)
 
         val_metric = self.evaluate(self.validate)
-        export_results(self.args.results_file, self.args.run_id, {"distortion": val_metric * 100})
+        self.export_results(val_metric)
         log.info(f"Final Results: Distortion: {val_metric * 100:.2f}")
 
         self.save_model(best_epoch)
@@ -135,3 +135,12 @@ class Runner(object):
         all_points_ok, outside_point, reason = self.model.check_all_points()
         if not all_points_ok:
             raise AssertionError(f"Point outside manifold. Reason: {reason}\n{outside_point}")
+
+    def export_results(self, avg_distortion):
+        manifold = self.args.model
+        dims = self.args.dims
+        if manifold == "upper" or manifold == "bounded":
+            dims = dims * (dims + 1)
+        result_data = {"data": self.args.data, "dims": dims, "manifold": manifold, "run_id": self.args.run_id,
+                       "distortion": avg_distortion * 100}
+        write_results_to_file(self.args.results_file, result_data)

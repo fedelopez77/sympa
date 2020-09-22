@@ -48,13 +48,10 @@ def assert_all_close(a, b, factor=1):
     return torch.all((a - b).abs() < EPS[torch.float32] * factor)
 
 
-def export_results(results_file: str, run_id: str, results: dict):
-    out = {"run_id": [run_id], "timestamp": datetime.now().strftime("%Y%m%d%H%M%S")}
-    for k, v in results.items():
-        out[k] = [v]
-
+def write_results_to_file(results_file: str, results_data: dict):
+    results_data["timestamp"] = [datetime.now().strftime("%Y%m%d%H%M%S")]
     file = Path(results_file)
-    pd.DataFrame.from_dict(out).to_csv(file, mode="a", header=not file.exists())
+    pd.DataFrame.from_dict(results_data).to_csv(file, mode="a", header=not file.exists())
 
 
 def is_prime(a):
