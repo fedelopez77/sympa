@@ -20,9 +20,10 @@ BRANCH="master"
 MODEL="$py_model"
 DIMS=$py_dim
 PREP="$py_prep"
-LRS=(1e-2 8e-3)
-MAX_GRADS=(500 250 100)
-BATCH_SIZES=(2048 512 128)
+RESULTS_FILE="out/$${MODEL}$${DIMS}d-$${PREP}"
+LRS=(1e-2)
+MAX_GRADS=(500)
+BATCH_SIZES=(2048 1024)
 
 
 if [[ $$(hostname -s) = pascal-* ]] || [[ $$(hostname -s) = skylake-* ]]; then
@@ -41,11 +42,6 @@ for BS in $${BATCH_SIZES[@]};
     do
         for MGN in $${MAX_GRADS[@]}; 
         do
-            git co -- .
-            git pull
-            git co $$BRANCH
-            git pull    
-            
             RUN_ID=r$$MODEL$$DIMS-$$PREP-lr$$LR-mgr$$MGN-bs$$BS-$$RUN
             python train.py \\
                 --data=$$PREP \\
@@ -58,7 +54,7 @@ for BS in $${BATCH_SIZES[@]};
                 --max_grad_norm=$$MGN \\
                 --batch_size=$$BS \\
                 --epochs=1500 \\
-                --results_file=out/${py_resultfile} \\
+                --results_file=$$RESULTS_FILE \\
                 --seed=-1 > /hits/basement/nlp/lopezfo/out/sympa/runs/$${RUN_ID}
         done
     done
@@ -76,16 +72,15 @@ if __name__ == '__main__':
     template = Template(SCRIPT)
 
     partition = "skylake"
-    models = ["euclidean"]
-    dims = [6]
-    preps = ["grid3d-64"]
-    runs = [1]
-    result_file = "run_high_dims.csv"
+    models = ["euclidean", "poincare"]
+    dims = [6, 12]
+    preps = ["tree3-3", "grid3d-64"]
+    runs = [1, 2]
 
     for i, (model, dim, prep, run) in enumerate(itertools.product(models, dims, preps, runs)):
         instance = (i % INSTANCES[partition]) + 1
 
-        vars = {"py_resultfile": result_file, "py_model": model, "py_dim": dim, "py_prep": prep,
+        vars = {"py_model": model, "py_dim": dim, "py_prep": prep,
                 "py_run": run, "py_partition": partition, "py_instance": instance}
         final_script = template.substitute(vars)
 
@@ -94,5 +89,5 @@ if __name__ == '__main__':
             f.write(final_script)
 
         op_res = subprocess.run(["sbatch", file_name], capture_output=True, check=True)
-        print(f"Job vars: {vars}\nJob number: {op_res.stdout.decode()}")
+        print(f"Job {i} vars: {vars}\nJob number: {op_res.stdout.decode()}")
     print("Done!")
