@@ -10,7 +10,7 @@ def process_one_result_file(file_path):
     """Process all the configurations (grid-search) run for one model and returns the DataFrame row of
     only the best performing one.
 
-    Columns like "manifold" or "data" are assumed to be the same for the entire file.
+    Columns "dims", "manifold" and "data" are assumed to be the same for the entire file.
     """
     data = pd.read_csv(file_path)
 
@@ -32,7 +32,8 @@ def process_one_result_file(file_path):
     best_distortion = means_and_stds.loc[min_id["distortion"]]    # returns series
     best_distortion = best_distortion.append(pd.Series(graph, index=["data"]))
     best_distortion = best_distortion.append(pd.Series(manifold, index=["manifold"]))
-    return best_distortion
+    best_distortion["dims"] = int(best_distortion["dims"])
+    return best_distortion.reindex(index=["dims", "data", "manifold", "distortion", "distortion_std"])
 
 
 if __name__ == '__main__':
