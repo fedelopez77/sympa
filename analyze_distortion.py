@@ -61,7 +61,7 @@ def main():
 
     distortion = get_distortion(model, triplets)
 
-    sns.displot(distortion, bins=30, kde=False)
+    plt.hist(distortion, bins=30)
     title = f"{args.model}-{args.data}"
     plt.title(title)
     plt.xlabel("Distortion")
