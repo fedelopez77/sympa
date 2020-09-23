@@ -50,7 +50,7 @@ def get_distortion(model, triplets):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="analyze_distortion.py")
+    parser = argparse.ArgumentParser(description="distortion_histogram.py")
     parser.add_argument("--ckpt_path", default="ckpt/euclid-grid2d-best-500ep", required=False, help="Path to model to load")
     parser.add_argument("--data", default="grid2d-36", required=False, type=str, help="Name of prep folder")
     parser.add_argument("--model", default="euclidean", type=str, help="Name of manifold used in the run")
