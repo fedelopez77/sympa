@@ -22,7 +22,7 @@ from sympa.model import Model
 import sympa.math.symmetric_math as sm
 from random import random
 import matplotlib
-# matplotlib.use("Agg")
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set()
@@ -92,8 +92,8 @@ def plot3d(xs, ys, zs, title):
     points = ax.scatter(xs, ys, c=zs, s=50, cmap=cmap)
     f.colorbar(points)
     plt.title(title)
-    plt.show()
-    # plt.savefig("plots/distor/" + title + ".png")
+    # plt.show()
+    plt.savefig("plots/poincareDist/" + title + ".png")
 
 
 def map_4d_to_2d(matrix_embeds, x, y):
