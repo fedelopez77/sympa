@@ -62,7 +62,7 @@ def main():
     distortion = get_distortion(model, triplets)
 
     plt.hist(distortion, bins=30)
-    title = f"{args.model}-{args.data}"
+    title = f"{args.model}{args.dims}d-{args.data}"
     plt.title(title)
     plt.xlabel("Distortion")
     plt.savefig("plots/distor/" + title + ".png")
