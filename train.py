@@ -33,7 +33,7 @@ def config_parser(parser):
                         help="Number of update steps to acum before backward.")
     # Others
     parser.add_argument("--results_file", default="out/results.csv", type=str, help="Exports final results to this file")
-    parser.add_argument("--save_epochs", default=1001, type=int, help="Exports every n epochs")
+    parser.add_argument("--save_epochs", default=10001, type=int, help="Exports every n epochs")
     parser.add_argument("--seed", default=42, type=int, help="Seed")
 
 
