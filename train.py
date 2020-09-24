@@ -27,7 +27,7 @@ def config_parser(parser):
     parser.add_argument("--patience", default=25, type=int, help="Epochs of patience for scheduler and early stop.")
     parser.add_argument("--max_grad_norm", default=1000.0, type=float, help="Max gradient norm.")
     parser.add_argument("--batch_size", default=1000, type=int, help="Batch size.")
-    parser.add_argument("--epochs", default=1000, type=int, help="Number of training epochs.")
+    parser.add_argument("--epochs", default=100, type=int, help="Number of training epochs.")
     parser.add_argument("--burnin", default=10, type=int, help="Number of initial epochs to train with reduce lr.")
     parser.add_argument("--grad_accum_steps", default=1, type=int,
                         help="Number of update steps to acum before backward.")

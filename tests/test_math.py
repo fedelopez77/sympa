@@ -290,7 +290,7 @@ class TestBasicMath(sympa.tests.TestCase):
         x = torch.Tensor([[[0.9408, 0.1332],
                            [0.1332, 0.5936]]])
 
-        result = sm.positive_conjugate_projection(x)
+        result, _ = sm.positive_conjugate_projection(x)
 
         self.assertAllClose(x, result)
 
@@ -300,7 +300,7 @@ class TestBasicMath(sympa.tests.TestCase):
         expected = torch.Tensor([[[6.2566, 4.6551],
                                   [4.6551, 3.4636]]])
 
-        result = sm.positive_conjugate_projection(x)
+        result, _ = sm.positive_conjugate_projection(x)
 
         self.assertAllClose(expected, result, rtol=1e-4)
 

@@ -1,7 +1,6 @@
 import torch
 import unittest
 from sympa.manifolds import UpperHalfManifold
-from sympa.manifolds.upper_half import generate_matrix_in_upper_half_space
 import sympa.math.symmetric_math as sm
 import sympa.tests
 from tests.utils import get_random_symmetric_matrices

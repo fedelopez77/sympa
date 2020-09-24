@@ -133,9 +133,11 @@ class Runner(object):
         self.model.eval()
         for node_id in range(len(self.id2node)):
             src = torch.LongTensor([[node_id]]).repeat(len(all_nodes), 1)
+            src[node_id] = (node_id + 1) % len(all_nodes)   # hack to not ask for the distance to the same value
             batch = torch.cat((src, all_nodes), dim=-1)
             with torch.no_grad():
                 distances = self.model(batch)
+            distances[node_id] = 0
             distance_matrix[node_id] = distances.view(-1)
         return distance_matrix
 
