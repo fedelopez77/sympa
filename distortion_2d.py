@@ -50,7 +50,7 @@ def load_prep(data_path):
 
 def get_avg_distortion(model, triplets):
     triplets = TensorDataset(triplets)
-    eval_split = DataLoader(triplets, sampler=SequentialSampler(triplets), batch_size=1024)
+    eval_split = DataLoader(triplets, sampler=SequentialSampler(triplets), batch_size=4096)
     distortion_metric = AverageDistortionMetric()
     model.eval()
     total_distortion = []
@@ -64,12 +64,23 @@ def get_avg_distortion(model, triplets):
     return mean(total_distortion)
 
 
-def get_poincare_model(vector_embeds):
-    d = {'model': 'poincare', 'dims': 2, 'num_points': len(vector_embeds)}
+def build_model_with_embeds(src_model, vector_embeds):
+    """
+    :param vector_embeds: num_points x 2
+    """
+    if src_model == "bounded":
+        target_model_name = "poincare"
+        dims = 2
+    else:           # src_model is upper
+        target_model_name = "upper"
+        dims = 1
+        vector_embeds = vector_embeds.view(-1, 2, 1, 1)
+
+    d = {'model': target_model_name, 'dims': dims, 'num_points': len(vector_embeds)}
     args = SimpleNamespace(**d)
-    poincare_model = Model(args)
-    poincare_model.embeddings.embeds.data.copy_(vector_embeds)
-    return poincare_model
+    model = Model(args)
+    model.embeddings.embeds.data.copy_(vector_embeds)
+    return model
 
 
 def get_points_in_circumference(radius, n_points=100):
@@ -93,7 +104,7 @@ def plot3d(xs, ys, zs, title):
     f.colorbar(points)
     plt.title(title)
     # plt.show()
-    plt.savefig("plots/poincareDist/" + title + ".png")
+    plt.savefig("plots/distortion_2d/" + title + ".png")
 
 
 def map_4d_to_2d(matrix_embeds, x, y):
@@ -128,30 +139,30 @@ def main():
     parser.add_argument("--model", default="upper", type=str, help="Name of manifold used in the run")
 
     args = parser.parse_args()
-    model, matrix_embeds = load_model(args)
+    src_model, matrix_embeds = load_model(args)
     triplets, id2node = load_prep(args.data)
-    # avg_distortion_original_model = get_avg_distortion(model, triplets)
+    avg_distortion_src_model = get_avg_distortion(src_model, triplets)
 
     xs = []
     ys = []
     zs = []
 
-    n_points = 100
+    n_points = 50
     # points = get_points_inside_circle(min_radius=0.5, max_radius=1, n_points=round(n_points * 0.65))
-    points = get_points_in_circumference(radius=1, n_points=round(n_points * 0.45))
-    points += get_points_in_circumference(radius=0.75, n_points=round(n_points * 0.35))
-    points += get_points_in_circumference(radius=0.5, n_points=round(n_points * 0.2))
+    points = get_points_in_circumference(radius=1, n_points=round(n_points))
+    # points += get_points_in_circumference(radius=0.75, n_points=round(n_points * 0.35))
+    # points += get_points_in_circumference(radius=0.5, n_points=round(n_points * 0.2))
     for x, y in points:
         vector_embeds = map_4d_to_2d(matrix_embeds, x, y)
-        poincare_model = get_poincare_model(vector_embeds)
+        target_model = build_model_with_embeds(args.model, vector_embeds)
 
-        current_avg_distortion = get_avg_distortion(poincare_model, triplets)
+        current_avg_distortion = get_avg_distortion(target_model, triplets)
 
         xs.append(x)
         ys.append(y)
         zs.append(current_avg_distortion)
 
-    title = f"{args.model}{args.dims}d-{args.data}"
+    title = f"{args.model}{args.dims}d-{args.data}_orig_dist{avg_distortion_src_model:.3f}"
     plot3d(xs, ys, zs, title)
 
 
