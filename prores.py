@@ -33,7 +33,7 @@ def process_one_result_file(file_path):
     best_distortion = best_distortion.append(pd.Series(graph, index=["data"]))
     best_distortion = best_distortion.append(pd.Series(manifold, index=["manifold"]))
     best_distortion["dims"] = int(best_distortion["dims"])
-    return best_distortion.reindex(index=["dims", "data", "manifold", "distortion", "distortion_std"])
+    return best_distortion.reindex(index=["dims", "data", "manifold", "distortion", "distortion_std", "mAP", "mAP_std"])
 
 
 if __name__ == '__main__':

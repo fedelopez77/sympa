@@ -8,7 +8,7 @@ from statistics import mean
 from tqdm import tqdm, trange
 from sympa import config
 from sympa.losses import AverageDistortionLoss
-from sympa.metrics import AverageDistortionMetric
+from sympa.metrics import AverageDistortionMetric, MeanAveragePrecisionMetric
 from sympa.utils import get_logging, write_results_to_file
 
 log = get_logging()
@@ -29,7 +29,7 @@ class Runner(object):
         self.writer = SummaryWriter(config.TENSORBOARD_PATH / args.run_id)
 
     def run(self):
-        best_val_metric, best_epoch = float("inf"), -1
+        best_distortion, best_epoch = float("inf"), -1
         best_model_state = None
         for epoch in trange(1, self.args.epochs + 1, desc="full_train"):
             train_loss = self.train_epoch(self.train, epoch)
@@ -44,15 +44,15 @@ class Runner(object):
                 self.save_model(epoch)
 
             if epoch % self.args.val_every == 0:
-                val_metric = self.evaluate(self.validate)
-                self.writer.add_scalar("val/distortion", val_metric, epoch)
-                log.info(f"Results ep {epoch}: tr loss: {train_loss:.1f}, val avg distortion: {val_metric * 100:.2f}")
+                distortion = self.evaluate(self.validate)
+                self.writer.add_scalar("val/distortion", distortion, epoch)
+                log.info(f"Results ep {epoch}: tr loss: {train_loss:.1f}, val avg distortion: {distortion * 100:.2f}")
 
-                self.scheduler.step(val_metric)
+                self.scheduler.step(distortion)
 
-                if val_metric < best_val_metric:
-                    log.info(f"Best val distortion: {val_metric * 100:.3f} at epoch {epoch}")
-                    best_val_metric = val_metric
+                if distortion < best_distortion:
+                    log.info(f"Best val distortion: {distortion * 100:.3f} at epoch {epoch}")
+                    best_distortion = distortion
                     best_epoch = epoch
                     best_model_state = copy.deepcopy(self.model.state_dict())
 
@@ -64,9 +64,10 @@ class Runner(object):
         log.info(f"Final evaluation on best model from epoch {best_epoch}")
         self.model.load_state_dict(best_model_state)
 
-        val_metric = self.evaluate(self.validate)
-        self.export_results(val_metric)
-        log.info(f"Final Results: Distortion: {val_metric * 100:.2f}")
+        distortion = self.evaluate(self.validate)
+        precision = self.calculate_mAP()
+        self.export_results(distortion, precision)
+        log.info(f"Final Results: Distortion: {distortion * 100:.2f}, Precision: {precision * 100:.2f}")
 
         self.save_model(best_epoch)
         self.writer.close()
@@ -119,6 +120,23 @@ class Runner(object):
         avg_distortion = mean(total_distortion)
         return avg_distortion
 
+    def calculate_mAP(self):
+        distance_matrix = self.build_distance_matrix()
+        mAP = MeanAveragePrecisionMetric(self.validate.dataset)
+        return mAP.calculate_metric(distance_matrix)
+
+    def build_distance_matrix(self):
+        all_nodes = torch.arange(0, len(self.id2node)).unsqueeze(1)
+        distance_matrix = torch.zeros((len(all_nodes), len(all_nodes)))
+        self.model.eval()
+        for node_id in range(len(self.id2node)):
+            src = torch.LongTensor([[node_id]]).repeat(len(all_nodes), 1)
+            batch = torch.cat((src, all_nodes), dim=-1)
+            with torch.no_grad():
+                distances = self.model(batch)
+            distance_matrix[node_id] = distances.view(-1)
+        return distance_matrix
+
     def save_model(self, epoch):
         # TODO save optimizer and scheduler
         save_path = config.CKPT_PATH / f"{self.args.run_id}-best-{epoch}ep"
@@ -136,11 +154,11 @@ class Runner(object):
         if not all_points_ok:
             raise AssertionError(f"Point outside manifold. Reason: {reason}\n{outside_point}")
 
-    def export_results(self, avg_distortion):
+    def export_results(self, avg_distortion, avg_precision):
         manifold = self.args.model
         dims = self.args.dims
         if manifold == "upper" or manifold == "bounded":
             dims = dims * (dims + 1)
         result_data = {"data": self.args.data, "dims": dims, "manifold": manifold, "run_id": self.args.run_id,
-                       "distortion": avg_distortion * 100}
+                       "distortion": avg_distortion * 100, "mAP": avg_precision * 100}
         write_results_to_file(self.args.results_file, result_data)
