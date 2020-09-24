@@ -21,9 +21,9 @@ MODEL="$py_model"
 DIMS=$py_dim
 PREP="$py_prep"
 RESULTS_FILE="out/$${MODEL}$${DIMS}d-$${PREP}"
-LRS=(1e-2)
-MAX_GRADS=(500)
-BATCH_SIZES=(2048 1024)
+LRS=(1e-2 7e-3)
+MAX_GRADS=(100 250 500)
+BATCH_SIZES=(2048 512 64)
 
 
 if [[ $$(hostname -s) = pascal-* ]] || [[ $$(hostname -s) = skylake-* ]]; then
@@ -35,6 +35,11 @@ conda deactivate
 conda deactivate
 conda activate sympa
 cd /home/lopezfo/run-sympa/
+
+git co -- .
+git pull
+git co $$BRANCH
+git pull
 
 for BS in $${BATCH_SIZES[@]}; 
     do
@@ -72,9 +77,9 @@ if __name__ == '__main__':
     template = Template(SCRIPT)
 
     partition = "skylake"
-    models = ["euclidean", "poincare"]
-    dims = [6, 12]
-    preps = ["tree3-3", "grid3d-64"]
+    models = ["bounded", "upper"]
+    dims = [2, 3, 5, 10]
+    preps = ["exp-chordal-47"]
     runs = [1, 2]
 
     for i, (model, dim, prep, run) in enumerate(itertools.product(models, dims, preps, runs)):
