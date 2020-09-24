@@ -32,6 +32,8 @@ class Runner(object):
         best_distortion, best_epoch = float("inf"), -1
         best_model_state = None
         for epoch in trange(1, self.args.epochs + 1, desc="full_train"):
+            self.set_burnin_lr(epoch)
+
             train_loss = self.train_epoch(self.train, epoch)
 
             self.writer.add_scalar("train/loss", train_loss, epoch)
@@ -142,6 +144,19 @@ class Runner(object):
         save_path = config.CKPT_PATH / f"{self.args.run_id}-best-{epoch}ep"
         log.info(f"Saving model checkpoint to {save_path}")
         torch.save({"model": self.model.state_dict(), "id2node": self.id2node}, save_path)
+
+    def set_burnin_lr(self, epoch):
+        """Modifies lr if epoch is less than burn-in epochs"""
+        if self.args.burnin < 1:
+            return
+        if epoch == 1:
+            self.set_lr(self.get_lr() / config.BURNIN_FACTOR)
+        if epoch == self.args.burnin:
+            self.set_lr(self.get_lr() * config.BURNIN_FACTOR)
+
+    def set_lr(self, value):
+        for param_group in self.optimizer.param_groups:
+            param_group['lr'] = value
 
     def get_lr(self):
         """:return current learning rate as a float"""

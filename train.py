@@ -21,12 +21,14 @@ def config_parser(parser):
     parser.add_argument("--dims", default=3, type=int, help="Dimensions for the model.")
     # optim and config
     parser.add_argument("--learning_rate", default=1e-2, type=float, help="Starting learning rate.")
+    parser.add_argument("--reduce_factor", default=5, type=float, help="Factor to reduce lr on plateau.")
     parser.add_argument("--weight_decay", default=0.00, type=float, help="L2 Regularization.")
     parser.add_argument("--val_every", default=5, type=int, help="Runs validation every n epochs.")
     parser.add_argument("--patience", default=25, type=int, help="Epochs of patience for scheduler and early stop.")
     parser.add_argument("--max_grad_norm", default=1000.0, type=float, help="Max gradient norm.")
     parser.add_argument("--batch_size", default=1000, type=int, help="Batch size.")
     parser.add_argument("--epochs", default=1000, type=int, help="Number of training epochs.")
+    parser.add_argument("--burnin", default=10, type=int, help="Number of initial epochs to train with reduce lr.")
     parser.add_argument("--grad_accum_steps", default=1, type=int,
                         help="Number of update steps to acum before backward.")
     # Others
@@ -44,7 +46,8 @@ def get_model(args):
 
 def get_scheduler(optimizer, args):
     patience = round(args.patience / args.val_every)
-    return torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=patience, factor=0.5)
+    factor = 1 / float(args.reduce_factor)
+    return torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=patience, factor=factor)
 
 
 def main():
