@@ -376,7 +376,7 @@ def hermitian_matrix_sqrt(h: torch.Tensor):
 
 def matrix_sqrt(y: torch.Tensor):
     """
-    For a symmetric matrix Y, the square root by diagonalization is:
+    For a real symmetric matrix Y, the square root by diagonalization is:
     1) Y = SDS^-1
     2) D_sq = D^0.5 -> the sqrt of each entry in D
     3) Y_sqrt = S D_sq S^-1

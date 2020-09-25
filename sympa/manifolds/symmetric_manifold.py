@@ -4,7 +4,7 @@ import torch
 from geoopt.manifolds.base import Manifold
 from sympa.math import symmetric_math as sm
 from sympa.math.caley_transform import caley_transform
-from sympa.math.takagi_factorization import takagi_factorization
+from sympa.math.takagi_factorization import TakagiFactorization
 
 
 class SymmetricManifold(Manifold, ABC):
@@ -28,6 +28,7 @@ class SymmetricManifold(Manifold, ABC):
         """
         super().__init__()
         self.ndim = ndim
+        self.takagi_factorization = TakagiFactorization(ndim)
         self.projected_points = 0
 
     def dist(self, z1: torch.Tensor, z2: torch.Tensor, *, keepdim=False) -> torch.Tensor:
@@ -49,7 +50,7 @@ class SymmetricManifold(Manifold, ABC):
 
         w = caley_transform(z3)
 
-        eigvalues, eigvectors = takagi_factorization(w)
+        eigvalues, eigvectors = self.takagi_factorization.factorize(w)
 
         # assert 1 >= eigvalues >= 0
         eps = sm.EPS[eigvalues.dtype]

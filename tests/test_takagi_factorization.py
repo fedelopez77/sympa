@@ -1,7 +1,7 @@
 import torch
 import unittest
 import sympa.math.symmetric_math as sm
-from sympa.math.takagi_factorization import takagi_factorization
+from sympa.math.takagi_factorization import TakagiFactorization
 import sympa.tests
 from tests.utils import get_random_symmetric_matrices
 
@@ -15,7 +15,7 @@ class TestTakagiFactorization(sympa.tests.TestCase):
     def test_takagi_factorization_real_pos_imag_pos(self):
         a = get_random_symmetric_matrices(3, 3)
 
-        eigenvalues, s = takagi_factorization(a)
+        eigenvalues, s = TakagiFactorization(3).factorize(a)
 
         diagonal = torch.diag_embed(eigenvalues)
         diagonal = sm.stick(diagonal, torch.zeros_like(diagonal))
@@ -26,7 +26,7 @@ class TestTakagiFactorization(sympa.tests.TestCase):
         a = get_random_symmetric_matrices(3, 3)
         a = sm.stick(sm.real(a), sm.imag(a) * -1)
 
-        eigenvalues, s = takagi_factorization(a)
+        eigenvalues, s = TakagiFactorization(3).factorize(a)
 
         diagonal = torch.diag_embed(eigenvalues)
         diagonal = sm.stick(diagonal, torch.zeros_like(diagonal))
@@ -37,7 +37,7 @@ class TestTakagiFactorization(sympa.tests.TestCase):
         a = get_random_symmetric_matrices(3, 3)
         a = sm.stick(sm.real(a) * -1, sm.imag(a))
 
-        eigenvalues, s = takagi_factorization(a)
+        eigenvalues, s = TakagiFactorization(3).factorize(a)
 
         diagonal = torch.diag_embed(eigenvalues)
         diagonal = sm.stick(diagonal, torch.zeros_like(diagonal))
@@ -48,7 +48,7 @@ class TestTakagiFactorization(sympa.tests.TestCase):
         a = get_random_symmetric_matrices(3, 3)
         a = sm.stick(sm.real(a) * -1, sm.imag(a) * -1)
 
-        eigenvalues, s = takagi_factorization(a)
+        eigenvalues, s = TakagiFactorization(3).factorize(a)
 
         diagonal = torch.diag_embed(eigenvalues)
         diagonal = sm.stick(diagonal, torch.zeros_like(diagonal))
@@ -58,7 +58,7 @@ class TestTakagiFactorization(sympa.tests.TestCase):
     def test_takagi_factorization_small_values(self):
         a = get_random_symmetric_matrices(3, 3) / 10
 
-        eigenvalues, s = takagi_factorization(a)
+        eigenvalues, s = TakagiFactorization(3).factorize(a)
 
         diagonal = torch.diag_embed(eigenvalues)
         diagonal = sm.stick(diagonal, torch.zeros_like(diagonal))
@@ -68,7 +68,7 @@ class TestTakagiFactorization(sympa.tests.TestCase):
     def test_takagi_factorization_large_values(self):
         a = get_random_symmetric_matrices(3, 3) * 10
 
-        eigenvalues, s = takagi_factorization(a)
+        eigenvalues, s = TakagiFactorization(3).factorize(a)
 
         diagonal = torch.diag_embed(eigenvalues)
         diagonal = sm.stick(diagonal, torch.zeros_like(diagonal))
@@ -78,7 +78,7 @@ class TestTakagiFactorization(sympa.tests.TestCase):
     def test_takagi_factorization_very_large_values(self):
         a = get_random_symmetric_matrices(3, 3) * 1000
 
-        eigenvalues, s = takagi_factorization(a)
+        eigenvalues, s = TakagiFactorization(3).factorize(a)
 
         diagonal = torch.diag_embed(eigenvalues)
         diagonal = sm.stick(diagonal, torch.zeros_like(diagonal))
@@ -88,7 +88,7 @@ class TestTakagiFactorization(sympa.tests.TestCase):
     def test_takagi_factorization_real_identity(self):
         a = sm.identity_like(get_random_symmetric_matrices(3, 3))
 
-        eigenvalues, s = takagi_factorization(a)
+        eigenvalues, s = TakagiFactorization(3).factorize(a)
 
         diagonal = torch.diag_embed(eigenvalues)
         diagonal = sm.stick(diagonal, torch.zeros_like(diagonal))
@@ -101,7 +101,7 @@ class TestTakagiFactorization(sympa.tests.TestCase):
         a = sm.identity_like(get_random_symmetric_matrices(3, 3))
         a = sm.stick(sm.imag(a), sm.real(a))
 
-        eigenvalues, s = takagi_factorization(a)
+        eigenvalues, s = TakagiFactorization(3).factorize(a)
 
         diagonal = torch.diag_embed(eigenvalues)
         diagonal = sm.stick(diagonal, torch.zeros_like(diagonal))
@@ -112,7 +112,7 @@ class TestTakagiFactorization(sympa.tests.TestCase):
         a = get_random_symmetric_matrices(3, 3) * 10
         a = torch.where(sm.identity_like(a) == 1, a, torch.zeros_like(a))
 
-        eigenvalues, s = takagi_factorization(a)
+        eigenvalues, s = TakagiFactorization(3).factorize(a)
 
         diagonal = torch.diag_embed(eigenvalues)
         diagonal = sm.stick(diagonal, torch.zeros_like(diagonal))

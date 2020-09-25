@@ -83,7 +83,7 @@ class Runner(object):
         self.optimizer.zero_grad()
 
         for step, batch in enumerate(tqdm(train_split, desc=f"epoch_{epoch_num}")):  # enumerate(train_split):
-            batch_points = batch[0].to(config.DEVICE)
+            batch_points = batch[0]     # .to(config.DEVICE)    Dataset is already on DEVICE
 
             manifold_distances = self.model(batch_points)
             graph_distances = batch_points[:, -1]

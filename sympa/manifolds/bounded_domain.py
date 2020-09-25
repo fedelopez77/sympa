@@ -4,7 +4,6 @@ from sympa.manifolds import SymmetricManifold
 from sympa.manifolds.upper_half import UpperHalfManifold
 from sympa.math import symmetric_math as sm
 from sympa.math.caley_transform import caley_transform, inverse_caley_transform
-from sympa.math.takagi_factorization import takagi_factorization
 from sympa.utils import get_logging
 
 log = get_logging()
@@ -70,7 +69,7 @@ class BoundedDomainManifold(SymmetricManifold):
         """
         z = super().projx(z)
 
-        eigenvalues, s = takagi_factorization(z)
+        eigenvalues, s = self.takagi_factorization.factorize(z)
         eigenvalues_tilde = torch.clamp(eigenvalues, max=1 - sm.EPS[z.dtype])
 
         diag_tilde = torch.diag_embed(eigenvalues_tilde)
