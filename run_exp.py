@@ -36,10 +36,12 @@ conda deactivate
 conda activate sympa
 cd /home/lopezfo/run-sympa/
 
-git co -- .
-git pull
-git co $$BRANCH
-git pull
+if [ "$py_do_pull" == "1" ]; then
+    git co -- .
+    git pull
+    git co $$BRANCH
+    git pull
+fi
 
 for BS in $${BATCH_SIZES[@]}; 
     do
@@ -77,16 +79,18 @@ if __name__ == '__main__':
     template = Template(SCRIPT)
 
     partition = "skylake"
-    models = ["bounded", "upper"]
-    dims = [2, 3, 5, 10]
+    models = ["bounded"]
+    dims = [2, 3]
     preps = ["exp-chordal-47"]
-    runs = [1, 2]
+    runs = [1]
 
     for i, (model, dim, prep, run) in enumerate(itertools.product(models, dims, preps, runs)):
         instance = (i % INSTANCES[partition]) + 1
+        do_pull = 1 if i == 0 else 0
 
         vars = {"py_model": model, "py_dim": dim, "py_prep": prep,
-                "py_run": run, "py_partition": partition, "py_instance": instance}
+                "py_run": run, "py_partition": partition, "py_instance": instance,
+                "py_do_pull": do_pull}
         final_script = template.substitute(vars)
 
         file_name = "job_script.sh"
