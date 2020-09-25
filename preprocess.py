@@ -68,7 +68,20 @@ def get_graph(args):
         graph = nx.algorithms.operators.rooted_product(tree, grid, list(grid.nodes())[0])
         graph.name = f"product-rooted"
     else:
-        raise ValueError(f"--graph={args.graph} not recognized")
+        graph = load_graph(args)
+    return graph
+
+
+def load_graph(args):
+    path = f"data/{args.graph}/{args.graph}.edges"
+    graph = nx.Graph()
+    with open(path, "r") as f:
+        for line in f:
+            line = line.strip().split()
+            if len(line) == 2 or (len(line) > 2 and not line[2].replace(".", "", 1).isdigit()):
+                graph.add_edge(line[0], line[1])
+            else:
+                graph.add_edge(line[0], line[1], weight=float(line[2]))
     return graph
 
 
@@ -86,18 +99,24 @@ def build_triplets(graph, node2id):
     """
     Builds triplets of (src, dst, distance) for each node in the graph, to all other connected nodes.
 
+    PRE: the distances in the graph are symmetric.
     :param graph:
     :param node2id:
-    :return: list of triplets
+    :return: set of triplets
     """
-    triplets = set()
-    lengths = dict(nx.all_pairs_shortest_path_length(graph))
+    if nx.is_weighted(graph):
+        lengths = dict(nx.all_pairs_dijkstra_path_length(graph))
+    else:
+        lengths = dict(nx.all_pairs_shortest_path_length(graph))
+
+    triplets, pairs = set(), set()
     for src, reachable_nodes in lengths.items():
         for dst, distance in reachable_nodes.items():
             if distance > 0:
                 src_id = node2id[src]
                 dst_id = node2id[dst]
-                if (dst_id, src_id, distance) not in triplets:  # checks that the symmetric triplets is not there
+                if (dst_id, src_id) not in pairs:  # checks that the symmetric triplets is not there
+                    pairs.add((src_id, dst_id))
                     triplets.add((src_id, dst_id, distance))
     return triplets
 
@@ -111,6 +130,7 @@ def main():
     parser.add_argument("--grid_dims", default=3, type=int, help="if --graph=grid, number of dimensions")
     parser.add_argument("--tree_branching", default=3, type=int, help="if --graph=tree, branching factor of tree")
     parser.add_argument("--tree_height", default=3, type=int, help="if --graph=tree, height of tree")
+    parser.add_argument("--plot_graph", default=0, type=int, help="Whether to generate a plot or not")
 
     args = parser.parse_args()
     utils.set_seed(42)
@@ -125,8 +145,9 @@ def main():
     log.info(f"Building graph: {args.graph}")
     graph = get_graph(args)
     log.info(nx.info(graph))
-    log.info("Plotting graph")
-    plot_graph(graph, run_path)
+    if args.plot_graph == 1:
+        log.info("Plotting graph")
+        plot_graph(graph, run_path)
 
     nodes = list(graph.nodes())
     id2node = {i: node for i, node in enumerate(nodes)}
