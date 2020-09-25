@@ -15,12 +15,12 @@ log = get_logging()
 
 
 class Runner(object):
-    def __init__(self, model, optimizer, scheduler, id2node, triplets, args):
+    def __init__(self, model, optimizer, scheduler, id2node, src_dst_ids, distances, args):
         self.model = model
         self.optimizer = optimizer
         self.scheduler = scheduler
         self.id2node = id2node
-        triplets = TensorDataset(triplets)
+        triplets = TensorDataset(src_dst_ids, distances)
         self.train = DataLoader(triplets, sampler=RandomSampler(triplets), batch_size=args.batch_size)
         self.validate = DataLoader(triplets, sampler=SequentialSampler(triplets), batch_size=args.batch_size)
         self.loss = AverageDistortionLoss()
@@ -83,10 +83,9 @@ class Runner(object):
         self.optimizer.zero_grad()
 
         for step, batch in enumerate(tqdm(train_split, desc=f"epoch_{epoch_num}")):  # enumerate(train_split):
-            batch_points = batch[0]     # .to(config.DEVICE)    Dataset is already on DEVICE
+            src_dst_ids, graph_distances = batch     # .to(config.DEVICE)    Dataset is already on DEVICE
 
-            manifold_distances = self.model(batch_points)
-            graph_distances = batch_points[:, -1]
+            manifold_distances = self.model(src_dst_ids)
 
             loss = self.loss.calculate_loss(graph_distances, manifold_distances)
             loss = loss / self.args.grad_accum_steps
@@ -112,10 +111,9 @@ class Runner(object):
         self.model.eval()
         total_distortion = []
         for batch in eval_split:        # tqdm(eval_split, desc="Evaluating"):
-            batch_points = batch[0].to(config.DEVICE)
+            src_dst_ids, graph_distances = batch     # .to(config.DEVICE)
             with torch.no_grad():
-                manifold_distances = self.model(batch_points)
-                graph_distances = batch_points[:, -1]
+                manifold_distances = self.model(src_dst_ids)
                 distortion = self.metric.calculate_metric(graph_distances, manifold_distances)
             total_distortion.extend(distortion.tolist())
 

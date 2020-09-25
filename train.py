@@ -63,7 +63,11 @@ def main():
     log.info(f"Loading data from {data_path}")
     data = torch.load(data_path)
     id2node = data["id2node"]
-    triplets = torch.LongTensor(list(data["triplets"])).to(config.DEVICE)
+    triplets = list(data["triplets"])
+    src_dst_ids = [(src, dst) for src, dst, _ in triplets]
+    distances = [distance for _, _, distance in triplets]
+    src_dst_ids = torch.LongTensor(src_dst_ids).to(config.DEVICE)
+    distances = torch.Tensor(distances).to(config.DEVICE)
 
     args.num_points = len(id2node)
     model = get_model(args)
@@ -75,7 +79,8 @@ def main():
     log.info(f"Points: {args.num_points}, dims: {args.dims}, number of parameters: {n_params}")
     log.info(model)
 
-    runner = Runner(model, optimizer, scheduler=scheduler, id2node=id2node, triplets=triplets, args=args)
+    runner = Runner(model, optimizer, scheduler=scheduler, id2node=id2node, src_dst_ids=src_dst_ids,
+                    distances=distances, args=args)
     runner.run()
     log.info("Done!")
 

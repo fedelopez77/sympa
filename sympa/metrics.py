@@ -30,7 +30,7 @@ class MeanAveragePrecisionMetric:
         """
         neighbors = defaultdict(set)
         for i in range(len(triplets)):
-            src, dst, distance = triplets[i][0].tolist()
+            (src, dst), distance = triplets[i][0].tolist(), triplets[i][1].tolist()
             if distance == 1:
                 neighbors[src].add(dst)
                 neighbors[dst].add(src)
