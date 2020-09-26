@@ -94,6 +94,24 @@ class Model(nn.Module):
             self.embeddings = VectorEmbeddings(args.num_points, args.dims, manifold=gt.Euclidean(1))
         elif args.model == "poincare":
             self.embeddings = VectorEmbeddings(args.num_points, args.dims, manifold=gt.PoincareBall())
+        elif args.model == "lorentz":
+            self.embeddings = VectorEmbeddings(args.num_points, args.dims, manifold=gt.Lorentz())
+        elif args.model == "sphere":
+            self.embeddings = VectorEmbeddings(args.num_points, args.dims, manifold=gt.Sphere())
+        elif args.model == "prod-hysph":
+            poincare = gt.PoincareBall()
+            sphere = gt.Sphere()
+            product = gt.ProductManifold((poincare, args.dims // 2), (sphere, args.dims // 2))
+            self.embeddings = VectorEmbeddings(args.num_points, args.dims, manifold=product)
+        elif args.model == "prod-hyhy":
+            poincare = gt.PoincareBall()
+            product = gt.ProductManifold((poincare, args.dims // 2), (poincare, args.dims // 2))
+            self.embeddings = VectorEmbeddings(args.num_points, args.dims, manifold=product)
+        elif args.model == "prod-hyeu":
+            poincare = gt.PoincareBall()
+            euclidean = gt.Euclidean(1)
+            product = gt.ProductManifold((poincare, args.dims // 2), (euclidean, args.dims // 2))
+            self.embeddings = VectorEmbeddings(args.num_points, args.dims, manifold=product)
         elif args.model == "upper":
             self.embeddings = ComplexSymmetricMatrixEmbeddings(args.num_points, args.dims,
                                                                manifold=UpperHalfManifold(args.dims))

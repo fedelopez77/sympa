@@ -3,7 +3,7 @@ import random
 import torch
 from geoopt.optim import RiemannianSGD
 from sympa import config
-from sympa.utils import set_seed, get_logging
+from sympa.utils import set_seed, get_logging, scale_triplets
 from sympa.runner import Runner
 from sympa.model import Model
 
@@ -29,6 +29,7 @@ def config_parser(parser):
     parser.add_argument("--batch_size", default=1000, type=int, help="Batch size.")
     parser.add_argument("--epochs", default=100, type=int, help="Number of training epochs.")
     parser.add_argument("--burnin", default=10, type=int, help="Number of initial epochs to train with reduce lr.")
+    parser.add_argument("--scale_triplets", default=0, type=int, help="Whether to apply scaling to triplets or not")
     parser.add_argument("--grad_accum_steps", default=1, type=int,
                         help="Number of update steps to acum before backward.")
     # Others
@@ -50,6 +51,21 @@ def get_scheduler(optimizer, args):
     return torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=patience, factor=factor)
 
 
+def load_training_data(args):
+    data_path = config.PREP_PATH / f"{args.data}/{config.PREPROCESSED_FILE}"
+    log.info(f"Loading data from {data_path}")
+    data = torch.load(data_path)
+    id2node = data["id2node"]
+    triplets = list(data["triplets"])
+    if args.scale_triplets == 1:
+        triplets = scale_triplets(triplets)
+    src_dst_ids = [(src, dst) for src, dst, _ in triplets]
+    distances = [distance for _, _, distance in triplets]
+    src_dst_ids = torch.LongTensor(src_dst_ids).to(config.DEVICE)
+    distances = torch.Tensor(distances).to(config.DEVICE)
+    return distances, id2node, src_dst_ids
+
+
 def main():
     parser = argparse.ArgumentParser("train.py")
     config_parser(parser)
@@ -59,15 +75,7 @@ def main():
     seed = args.seed if args.seed > 0 else random.randint(1, 1000000)
     set_seed(seed)
 
-    data_path = config.PREP_PATH / f"{args.data}/{config.PREPROCESSED_FILE}"
-    log.info(f"Loading data from {data_path}")
-    data = torch.load(data_path)
-    id2node = data["id2node"]
-    triplets = list(data["triplets"])
-    src_dst_ids = [(src, dst) for src, dst, _ in triplets]
-    distances = [distance for _, _, distance in triplets]
-    src_dst_ids = torch.LongTensor(src_dst_ids).to(config.DEVICE)
-    distances = torch.Tensor(distances).to(config.DEVICE)
+    distances, id2node, src_dst_ids = load_training_data(args)
 
     args.num_points = len(id2node)
     model = get_model(args)
@@ -83,6 +91,7 @@ def main():
                     distances=distances, args=args)
     runner.run()
     log.info("Done!")
+
 
 
 if __name__ == "__main__":

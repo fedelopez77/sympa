@@ -56,3 +56,17 @@ def write_results_to_file(results_file: str, results_data: dict):
 
 def is_prime(a):
     return all(a % i for i in range(2, a))
+
+
+def scale_triplets(triplets):
+    """
+    Applies max scaling. Idea taken from Cruceru20.
+    In this way we use the max-normalized squared distances.
+    This makes all distances to fall between (0, 1]
+
+    :param triplets: iterable with tuples of (src, dst, distance)
+    """
+    triplets = [(src, dst, dist**2) for src, dst, dist in triplets]
+    max_dist = max([dist for _, _, dist in triplets])
+    triplets = [(src, dst, dist / max_dist) for src, dst, dist in triplets]
+    return triplets
