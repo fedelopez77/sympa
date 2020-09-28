@@ -19,13 +19,16 @@ def config_parser(parser):
     parser.add_argument("--model", default="upper", type=str, help="Model type: 'euclidean', 'poincare', "
                                                                        "'upper' or 'bounded'")
     parser.add_argument("--dims", default=3, type=int, help="Dimensions for the model.")
+    parser.add_argument("--scale_init", default=1, type=float, help="Value to init scale.")
+    parser.add_argument("--scale_coef", default=10, type=float, help="Coefficient to divide scale.")
+    parser.add_argument("--train_scale", default=0, type=int, help="Whether to train scaling or not.")
     # optim and config
     parser.add_argument("--learning_rate", default=1e-2, type=float, help="Starting learning rate.")
     parser.add_argument("--reduce_factor", default=5, type=float, help="Factor to reduce lr on plateau.")
     parser.add_argument("--weight_decay", default=0.00, type=float, help="L2 Regularization.")
     parser.add_argument("--val_every", default=5, type=int, help="Runs validation every n epochs.")
     parser.add_argument("--patience", default=25, type=int, help="Epochs of patience for scheduler and early stop.")
-    parser.add_argument("--max_grad_norm", default=1000.0, type=float, help="Max gradient norm.")
+    parser.add_argument("--max_grad_norm", default=50.0, type=float, help="Max gradient norm.")
     parser.add_argument("--batch_size", default=1000, type=int, help="Batch size.")
     parser.add_argument("--epochs", default=100, type=int, help="Number of training epochs.")
     parser.add_argument("--burnin", default=10, type=int, help="Number of initial epochs to train with reduce lr.")

@@ -40,6 +40,7 @@ class Runner(object):
 
             self.writer.add_scalar("train/loss", train_loss, epoch)
             self.writer.add_scalar("train/lr", self.get_lr(), epoch)
+            self.writer.add_scalar("train/scale", self.model.get_scale(), epoch)
             self.writer.add_scalar("embeds/avg_norm", self.model.embeds_norm().mean().item(), epoch)
             if hasattr(self.model.manifold, 'projected_points'):
                 self.writer.add_scalar("train/projected_points", self.model.manifold.projected_points, epoch)

@@ -4,7 +4,6 @@ from sympa.utils import get_logging
 from sympa import config
 import geoopt as gt
 from sympa.manifolds import BoundedDomainManifold, UpperHalfManifold
-from sympa.math import symmetric_math as smath
 import abc
 
 log = get_logging()
@@ -118,7 +117,13 @@ class Model(nn.Module):
         elif args.model == "bounded":
             self.embeddings = ComplexSymmetricMatrixEmbeddings(args.num_points, args.dims,
                                                                manifold=BoundedDomainManifold(args.dims))
+        else:
+            raise ValueError(f"Unrecognized model option: {args.model}")
+
         self.manifold = self.embeddings.manifold
+        self.scale_coef = args.scale_coef
+        self.scale = torch.nn.Parameter(torch.Tensor([self.scale_coef * args.scale_init]),
+                                        requires_grad=args.train_scale == 1)
 
     def forward(self, input_triplet):
         """
@@ -134,7 +139,7 @@ class Model(nn.Module):
         dst_embeds = self.embeddings(dst_index)                       # b x 2 x n x n
 
         distances = self.distance(src_embeds, dst_embeds)
-        return distances
+        return distances * self.get_scale()
 
     def distance(self, src_embeds, dst_embeds):
         """
@@ -143,6 +148,9 @@ class Model(nn.Module):
         :return: tensor of b with distances from each src to each dst
         """
         return self.manifold.dist(src_embeds, dst_embeds)   # b x 1
+
+    def get_scale(self):
+        return (self.scale / self.scale_coef).clamp_min(0.1)     #torch.log(self.scale + 1).clamp_min(0.1)
 
     def check_all_points(self):
         return self.embeddings.check_all_points()
