@@ -3,7 +3,7 @@ import random
 import torch
 from geoopt.optim import RiemannianSGD
 from sympa import config
-from sympa.utils import set_seed, get_logging, scale_triplets
+from sympa.utils import set_seed, get_logging, scale_triplets, subsample_triplets
 from sympa.runner import Runner
 from sympa.model import Model
 
@@ -29,9 +29,11 @@ def config_parser(parser):
     parser.add_argument("--batch_size", default=1000, type=int, help="Batch size.")
     parser.add_argument("--epochs", default=100, type=int, help="Number of training epochs.")
     parser.add_argument("--burnin", default=10, type=int, help="Number of initial epochs to train with reduce lr.")
-    parser.add_argument("--scale_triplets", default=0, type=int, help="Whether to apply scaling to triplets or not")
     parser.add_argument("--grad_accum_steps", default=1, type=int,
                         help="Number of update steps to acum before backward.")
+    parser.add_argument("--scale_triplets", default=0, type=int, help="Whether to apply scaling to triplets or not")
+    parser.add_argument("--subsample", default=-1, type=float, help="Subsamples the % of closest triplets")
+
     # Others
     parser.add_argument("--results_file", default="out/results.csv", type=str, help="Exports final results to this file")
     parser.add_argument("--save_epochs", default=10001, type=int, help="Exports every n epochs")
@@ -56,14 +58,31 @@ def load_training_data(args):
     log.info(f"Loading data from {data_path}")
     data = torch.load(data_path)
     id2node = data["id2node"]
-    triplets = list(data["triplets"])
+    all_triplets = list(data["triplets"])
+    if args.subsample > 0:
+        sub_triplets = subsample_triplets(all_triplets, args.subsample)
+    else:
+        sub_triplets = all_triplets
+
     if args.scale_triplets == 1:
-        triplets = scale_triplets(triplets)
-    src_dst_ids = [(src, dst) for src, dst, _ in triplets]
-    distances = [distance for _, _, distance in triplets]
-    src_dst_ids = torch.LongTensor(src_dst_ids).to(config.DEVICE)
-    distances = torch.Tensor(distances).to(config.DEVICE)
-    return distances, id2node, src_dst_ids
+        all_triplets = scale_triplets(all_triplets)
+        sub_triplets = scale_triplets(sub_triplets)
+
+    train_src_dst_ids = [(src, dst) for src, dst, _ in sub_triplets]
+    train_distances = [distance for _, _, distance in sub_triplets]
+    train_src_dst_ids = torch.LongTensor(train_src_dst_ids).to(config.DEVICE)
+    train_distances = torch.Tensor(train_distances).to(config.DEVICE)
+
+    if args.subsample > 0:
+        # train triplets are a subsample, valid triplets are all
+        valid_src_dst_ids = [(src, dst) for src, dst, _ in all_triplets]
+        valid_distances = [distance for _, _, distance in all_triplets]
+        valid_src_dst_ids = torch.LongTensor(valid_src_dst_ids).to(config.DEVICE)
+        valid_distances = torch.Tensor(valid_distances).to(config.DEVICE)
+        return id2node, train_src_dst_ids, train_distances, valid_src_dst_ids, valid_distances
+
+    # train and validation triplets are the same
+    return id2node, train_src_dst_ids, train_distances, train_src_dst_ids, train_distances
 
 
 def main():
@@ -75,7 +94,7 @@ def main():
     seed = args.seed if args.seed > 0 else random.randint(1, 1000000)
     set_seed(seed)
 
-    distances, id2node, src_dst_ids = load_training_data(args)
+    id2node, train_src_dst_ids, train_distances, valid_src_dst_ids, valid_distances = load_training_data(args)
 
     args.num_points = len(id2node)
     model = get_model(args)
@@ -87,11 +106,11 @@ def main():
     log.info(f"Points: {args.num_points}, dims: {args.dims}, number of parameters: {n_params}")
     log.info(model)
 
-    runner = Runner(model, optimizer, scheduler=scheduler, id2node=id2node, src_dst_ids=src_dst_ids,
-                    distances=distances, args=args)
+    runner = Runner(model, optimizer, scheduler=scheduler, id2node=id2node, args=args,
+                    train_src_dst_ids=train_src_dst_ids, train_distances=train_distances,
+                    valid_src_dst_ids=valid_src_dst_ids, valid_distances=valid_distances)
     runner.run()
     log.info("Done!")
-
 
 
 if __name__ == "__main__":

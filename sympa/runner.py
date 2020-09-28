@@ -15,14 +15,16 @@ log = get_logging()
 
 
 class Runner(object):
-    def __init__(self, model, optimizer, scheduler, id2node, src_dst_ids, distances, args):
+    def __init__(self, model, optimizer, scheduler, id2node, train_src_dst_ids, train_distances,
+                 valid_src_dst_ids, valid_distances, args):
         self.model = model
         self.optimizer = optimizer
         self.scheduler = scheduler
         self.id2node = id2node
-        triplets = TensorDataset(src_dst_ids, distances)
-        self.train = DataLoader(triplets, sampler=RandomSampler(triplets), batch_size=args.batch_size)
-        self.validate = DataLoader(triplets, sampler=SequentialSampler(triplets), batch_size=args.batch_size)
+        train_triplets = TensorDataset(train_src_dst_ids, train_distances)
+        self.train = DataLoader(train_triplets, sampler=RandomSampler(train_triplets), batch_size=args.batch_size)
+        valid_triplets = TensorDataset(valid_src_dst_ids, valid_distances)
+        self.dev = DataLoader(valid_triplets, sampler=SequentialSampler(valid_triplets), batch_size=args.batch_size)
         self.loss = AverageDistortionLoss()
         self.metric = AverageDistortionMetric()
         self.args = args
@@ -46,7 +48,7 @@ class Runner(object):
                 self.save_model(epoch)
 
             if epoch % self.args.val_every == 0:
-                distortion = self.evaluate(self.validate)
+                distortion = self.evaluate(self.dev)
                 self.writer.add_scalar("val/distortion", distortion, epoch)
                 log.info(f"Results ep {epoch}: tr loss: {train_loss:.1f}, val avg distortion: {distortion * 100:.2f}")
 
@@ -66,7 +68,7 @@ class Runner(object):
         log.info(f"Final evaluation on best model from epoch {best_epoch}")
         self.model.load_state_dict(best_model_state)
 
-        distortion = self.evaluate(self.validate)
+        distortion = self.evaluate(self.dev)
         precision = self.calculate_mAP()
         self.export_results(distortion, precision)
         log.info(f"Final Results: Distortion: {distortion * 100:.2f}, Precision: {precision * 100:.2f}")
@@ -122,7 +124,7 @@ class Runner(object):
 
     def calculate_mAP(self):
         distance_matrix = self.build_distance_matrix()
-        mAP = MeanAveragePrecisionMetric(self.validate.dataset)
+        mAP = MeanAveragePrecisionMetric(self.dev.dataset)
         return mAP.calculate_metric(distance_matrix)
 
     def build_distance_matrix(self):

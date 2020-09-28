@@ -112,7 +112,8 @@ class TakagiFactorization:
                     left.append(vecs[i + 1])
                     right.append(vecs[i])
                 else:
-                    raise ValueError("Elements in eigenvectors are not equal. Was the original matrix symmetric?")
+                    raise ValueError(f"Elements in eigenvectors are not equal. Was the original matrix symmetric?"
+                                     f"Matrix: {matrix}")
 
             left.extend(right)
             reordered = torch.cat(left, dim=-1)             # 2n x 2n

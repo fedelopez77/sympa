@@ -70,3 +70,23 @@ def scale_triplets(triplets):
     max_dist = max([dist for _, _, dist in triplets])
     triplets = [(src, dst, dist / max_dist) for src, dst, dist in triplets]
     return triplets
+
+
+def subsample_triplets(triplets, subsample):
+    """
+    Keeps the proportion established by 'subsample' of the training triplets.
+    Keeps the triplets with the shortest distances, since they represent the local neighborhood of each node.
+
+    :param triplets: iterable with tuples of (src, dst, distance)
+    :param subsample: proportion of triplets to subsample. Float number in the range of (0, 1)
+    :return: subset of 'triplets'
+    """
+    distances = np.array([distance for _, _, distance in triplets])
+    indexes = np.argpartition(distances, 4)
+    sub_length = round(len(triplets) * subsample)
+    sub_indexes = indexes[:sub_length]
+
+    sub_triplets = []
+    for i in sub_indexes:
+        sub_triplets.append(triplets[i])
+    return sub_triplets
