@@ -14,7 +14,10 @@ def process_one_result_file(file_path):
     """
     data = pd.read_csv(file_path)
 
-    data = data.drop(columns="timestamp")
+    try:
+        data = data.drop(columns="timestamp")
+    except:
+        raise ValueError(f"Error with file: {file_path}")
     # remove run_number from run
     data[RUN_ID] = data[RUN_ID].map(lambda x: x[:-2] if x[-1].isdigit() and x[-2] == "-" else x)
 
