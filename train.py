@@ -38,6 +38,7 @@ def config_parser(parser):
     parser.add_argument("--subsample", default=-1, type=float, help="Subsamples the % of closest triplets")
 
     # Others
+    parser.add_argument("--load_model", default="", type=str, help="Load model from this file")
     parser.add_argument("--results_file", default="out/results.csv", type=str, help="Exports final results to this file")
     parser.add_argument("--save_epochs", default=10001, type=int, help="Exports every n epochs")
     parser.add_argument("--seed", default=42, type=int, help="Seed")
@@ -45,7 +46,9 @@ def config_parser(parser):
 
 def get_model(args):
     model = Model(args)
-    # TODO: load model if necessary
+    if args.load_model:
+        saved_data = torch.load(args.load_model)
+        model.load_state_dict(saved_data["model"])
     model.to(config.DEVICE)
     return model
 
