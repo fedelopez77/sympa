@@ -55,7 +55,7 @@ class SymmetricManifold(Manifold, ABC):
         # assert 1 >= eigvalues >= 0
         eps = sm.EPS[eigvalues.dtype]
         assert torch.all(eigvalues >= 0 - eps), f"Eigenvalues: {eigvalues}"
-        assert torch.all(eigvalues <= 1 + eps), f"Eigenvalues: {eigvalues}"
+        assert torch.all(eigvalues <= 1.01), f"Eigenvalues: {eigvalues}"
 
         # ri = (1 + di) / (1 - di) # TODO: see if clamping only denom or whole result in case values are too large
         r = (1 + eigvalues) / (1 - eigvalues).clamp(min=eps)
