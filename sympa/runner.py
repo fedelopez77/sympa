@@ -56,7 +56,8 @@ class Runner(object):
                 self.scheduler.step(distortion)
 
                 if distortion < best_distortion:
-                    log.info(f"Best val distortion: {distortion * 100:.3f} at epoch {epoch}")
+                    precision = self.calculate_mAP()
+                    log.info(f"Best val distortion: {distortion * 100:.3f}, mAP: {precision * 100:.2f} at epoch {epoch}")
                     best_distortion = distortion
                     best_epoch = epoch
                     best_model_state = copy.deepcopy(self.model.state_dict())
