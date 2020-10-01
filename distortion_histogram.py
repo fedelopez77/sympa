@@ -26,7 +26,7 @@ def load_model(args):
     model.load_state_dict(model_state)
     model.scale.data = torch.DoubleTensor([1])
     model.scale_coef = 1
-    return model
+    return model, embeds
 
 
 def get_distortion(model, src_dst_ids, graph_distances):
@@ -55,7 +55,7 @@ def main():
     parser.add_argument("--scale_init", default=1, type=float, help="Value to init scale.")
 
     args = parser.parse_args()
-    model = load_model(args)
+    model, _ = load_model(args)
     id2node, _, _, valid_src_dst_ids, valid_distances = load_training_data(args)
 
     distortion = get_distortion(model, valid_src_dst_ids, valid_distances)

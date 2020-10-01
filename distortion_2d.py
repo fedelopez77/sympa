@@ -11,6 +11,7 @@ Here the idea is the following:
 
 import argparse
 import torch
+import numpy as np
 from types import SimpleNamespace
 from statistics import mean
 from torch.utils.data import DataLoader, SequentialSampler, TensorDataset
@@ -20,6 +21,8 @@ from sympa import config
 from sympa.metrics import AverageDistortionMetric
 from sympa.model import Model
 import sympa.math.symmetric_math as sm
+from distortion_histogram import load_model
+from train import load_training_data
 from random import random
 import matplotlib
 matplotlib.use("Agg")
@@ -28,37 +31,16 @@ import seaborn as sns
 sns.set()
 
 
-def load_model(args):
-    data = torch.load(args.ckpt_path)
-    model_state, id2node = data["model"], data["id2node"]
-    embeds = model_state["embeddings.embeds"]
-    args.num_points = len(embeds)
-    args.dims = embeds.shape[-1]
-    model = Model(args)
-    model.load_state_dict(model_state)
-    return model, embeds
-
-
-def load_prep(data_path):
-    data_path = config.PREP_PATH / f"{data_path}/{config.PREPROCESSED_FILE}"
-    print(f"Loading data from {data_path}")
-    data = torch.load(data_path)
-    id2node = data["id2node"]
-    triplets = torch.LongTensor(list(data["triplets"])).to(config.DEVICE)
-    return triplets, id2node
-
-
-def get_avg_distortion(model, triplets):
-    triplets = TensorDataset(triplets)
+def get_avg_distortion(model, src_dst_ids, graph_distances):
+    triplets = TensorDataset(src_dst_ids, graph_distances)
     eval_split = DataLoader(triplets, sampler=SequentialSampler(triplets), batch_size=4096)
     distortion_metric = AverageDistortionMetric()
     model.eval()
     total_distortion = []
     for batch in tqdm(eval_split, desc="Evaluating"):
-        batch_points = batch[0].to(config.DEVICE)
+        src_dst_ids, graph_distances = batch
         with torch.no_grad():
-            manifold_distances = model(batch_points)
-            graph_distances = batch_points[:, -1]
+            manifold_distances = model(src_dst_ids)
             distortion = distortion_metric.calculate_metric(graph_distances, manifold_distances)
         total_distortion.extend(distortion.tolist())
     return mean(total_distortion)
@@ -87,6 +69,24 @@ def get_points_in_circumference(radius, n_points=100):
     pi = math.pi
     return [(math.cos(2 * pi / n_points * x) * radius,
              math.sin(2 * pi / n_points * x) * radius) for x in range(0, n_points + 1)]
+
+
+def get_points_in_sphere(radius, n_points=100, z_points=10):
+    pi = math.pi
+    points = []
+    z_ini, z_end = 0, 0.95
+    for z in np.arange(z_ini, z_end, (z_end - z_ini) / z_points):
+        for i in range(n_points):
+            x = math.cos(2 * pi / n_points * i) * radius
+            y = math.sin(2 * pi / n_points * i) * radius
+
+            # quizas conviene generar x e y para distintos radios y despejar el z de ahi y ya, sabiendo que la norma es 1
+            # o quizas usar esto asi y ya, tampoco es tan terrible.
+            # Probar con esto y vemos
+
+            norm = (x**2 + y**2 + z**2)**0.5
+            points.append((x / norm, y / norm, z / norm))
+    return points
 
 
 def get_points_inside_circle(min_radius, max_radius, n_points=100):
@@ -134,14 +134,17 @@ def map_4d_to_2d(matrix_embeds, x, y):
 
 def main():
     parser = argparse.ArgumentParser(description="plot_2d_distortion.py")
-    parser.add_argument("--ckpt_path", default="ckpt/upper2d-grid2d-best-500ep", required=False, help="Path to model to load")
+    parser.add_argument("--ckpt_path", default="ckpt/up3d-grid-best-10ep", required=False, help="Path to model to load")
     parser.add_argument("--data", default="grid2d-36", required=False, type=str, help="Name of prep folder")
     parser.add_argument("--model", default="upper", type=str, help="Name of manifold used in the run")
+    parser.add_argument("--scale_triplets", default=0, type=int, help="Whether to apply scaling to triplets or not")
+    parser.add_argument("--subsample", default=-1, type=float, help="Subsamples the % of closest triplets")
+    parser.add_argument("--scale_init", default=1, type=float, help="Value to init scale.")
 
     args = parser.parse_args()
     src_model, matrix_embeds = load_model(args)
-    triplets, id2node = load_prep(args.data)
-    avg_distortion_src_model = get_avg_distortion(src_model, triplets)
+    id2node, _, _, valid_src_dst_ids, valid_distances = load_training_data(args)
+    avg_distortion_src_model = get_avg_distortion(src_model, valid_src_dst_ids, valid_distances)
 
     xs = []
     ys = []
@@ -156,7 +159,7 @@ def main():
         vector_embeds = map_4d_to_2d(matrix_embeds, x, y)
         target_model = build_model_with_embeds(args.model, vector_embeds)
 
-        current_avg_distortion = get_avg_distortion(target_model, triplets)
+        current_avg_distortion = get_avg_distortion(target_model, valid_src_dst_ids, valid_distances)
 
         xs.append(x)
         ys.append(y)
