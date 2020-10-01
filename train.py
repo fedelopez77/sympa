@@ -20,7 +20,7 @@ def config_parser(parser):
                                                                        "'upper' or 'bounded'")
     parser.add_argument("--dims", default=3, type=int, help="Dimensions for the model.")
     parser.add_argument("--scale_init", default=1, type=float, help="Value to init scale.")
-    parser.add_argument("--scale_coef", default=10, type=float, help="Coefficient to divide scale.")
+    parser.add_argument("--scale_coef", default=1, type=float, help="Coefficient to divide scale.")
     parser.add_argument("--train_scale", default=0, type=int, help="Whether to train scaling or not.")
     # optim and config
     parser.add_argument("--learning_rate", default=1e-2, type=float, help="Starting learning rate.")
