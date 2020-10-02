@@ -58,7 +58,8 @@ def build_model_with_embeds(src_model, vector_embeds):
         dims = 1
         vector_embeds = vector_embeds.view(-1, 2, 1, 1)
 
-    d = {'model': target_model_name, 'dims': dims, 'num_points': len(vector_embeds)}
+    d = {'model': target_model_name, 'dims': dims, 'num_points': len(vector_embeds),
+         "scale_coef": 1, "scale_init": 1, "train_scale": False}
     args = SimpleNamespace(**d)
     model = Model(args)
     model.embeddings.embeds.data.copy_(vector_embeds)
@@ -71,19 +72,14 @@ def get_points_in_circumference(radius, n_points=100):
              math.sin(2 * pi / n_points * x) * radius) for x in range(0, n_points + 1)]
 
 
-def get_points_in_sphere(radius, n_points=100, z_points=10):
+def get_points_in_sphere(radius, n_points=100, z_points=10, z_end=5):
     pi = math.pi
     points = []
-    z_ini, z_end = 0, 0.95
+    z_ini = 0
     for z in np.arange(z_ini, z_end, (z_end - z_ini) / z_points):
         for i in range(n_points):
             x = math.cos(2 * pi / n_points * i) * radius
             y = math.sin(2 * pi / n_points * i) * radius
-
-            # quizas conviene generar x e y para distintos radios y despejar el z de ahi y ya, sabiendo que la norma es 1
-            # o quizas usar esto asi y ya, tampoco es tan terrible.
-            # Probar con esto y vemos
-
             norm = (x**2 + y**2 + z**2)**0.5
             points.append((x / norm, y / norm, z / norm))
     return points
@@ -103,11 +99,11 @@ def plot3d(xs, ys, zs, title):
     points = ax.scatter(xs, ys, c=zs, s=50, cmap=cmap)
     f.colorbar(points)
     plt.title(title)
-    # plt.show()
-    plt.savefig("plots/distortion_2d/" + title + ".png")
+    plt.show()
+    # plt.savefig("plots/distortion_2d/" + title + ".png")
 
 
-def map_4d_to_2d(matrix_embeds, x, y):
+def map_2x2_to_2d(matrix_embeds, x, y):
     """
     Applies multiplication of (x y) A (x y)^T.
     Maps the real and imaginary part of the result to a 2d vector
@@ -132,9 +128,35 @@ def map_4d_to_2d(matrix_embeds, x, y):
     return vecs_2d
 
 
+def map_3x3_to_2d(matrix_embeds, x, y, z):
+    """
+    Applies multiplication of (x y z) A (x y z)^T.
+    Maps the real and imaginary part of the result to a 2d vector
+
+    :param matrix_embeds: num_points x 2 x 2 x 2
+    :param x: float: real value
+    :param y: float: real value
+    :return: num_points x 2 tensor
+    """
+    v_hor = torch.zeros((1, 2, 3, 3))
+    v_hor[0, 0, 0, 0] = x
+    v_hor[0, 0, 0, 1] = y
+    v_hor[0, 0, 0, 2] = z
+    v_ver = sm.transpose(v_hor)
+
+    v_hor = v_hor.repeat(len(matrix_embeds), 1, 1, 1)
+    v_ver = v_ver.repeat(len(matrix_embeds), 1, 1, 1)
+    res = sm.bmm3(v_hor, matrix_embeds, v_ver)  # n x 2 x 3 x 3
+
+    real_coord = torch.unsqueeze(res[:, 0, 0, 0], 1)
+    imag_coord = torch.unsqueeze(res[:, 1, 0, 0], 1)
+    vecs_2d = torch.cat((real_coord, imag_coord), dim=-1)
+    return vecs_2d
+
+
 def main():
     parser = argparse.ArgumentParser(description="plot_2d_distortion.py")
-    parser.add_argument("--ckpt_path", default="ckpt/up3d-grid-best-10ep", required=False, help="Path to model to load")
+    parser.add_argument("--ckpt_path", default="ckpt/up3d-grid2d-best-10ep", required=False, help="Path to model to load")
     parser.add_argument("--data", default="grid2d-36", required=False, type=str, help="Name of prep folder")
     parser.add_argument("--model", default="upper", type=str, help="Name of manifold used in the run")
     parser.add_argument("--scale_triplets", default=0, type=int, help="Whether to apply scaling to triplets or not")
@@ -150,13 +172,12 @@ def main():
     ys = []
     zs = []
 
-    n_points = 50
-    # points = get_points_inside_circle(min_radius=0.5, max_radius=1, n_points=round(n_points * 0.65))
-    points = get_points_in_circumference(radius=1, n_points=round(n_points))
-    # points += get_points_in_circumference(radius=0.75, n_points=round(n_points * 0.35))
-    # points += get_points_in_circumference(radius=0.5, n_points=round(n_points * 0.2))
-    for x, y in points:
-        vector_embeds = map_4d_to_2d(matrix_embeds, x, y)
+    n_points = 20 # 50
+    # points = get_points_in_circumference(radius=1, n_points=round(n_points))
+    points = get_points_in_sphere(radius=1, n_points=n_points, z_points=4, z_end=5)
+    for x, y, z in points:
+        # vector_embeds = map_2x2_to_2d(matrix_embeds, x, y)
+        vector_embeds = map_3x3_to_2d(matrix_embeds, x, y, z)
         target_model = build_model_with_embeds(args.model, vector_embeds)
 
         current_avg_distortion = get_avg_distortion(target_model, valid_src_dst_ids, valid_distances)
