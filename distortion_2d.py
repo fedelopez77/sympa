@@ -85,6 +85,24 @@ def get_points_in_sphere(radius, n_points=100, z_points=10, z_end=5):
     return points
 
 
+def get_points_in_sphere_polar(n_points, z_points, radius=1):
+    pi = math.pi
+    points = []
+    for z_i in range(z_points):
+        n_points = 7 * z_i
+        n_points = min(max(n_points, 1), 20)
+        for i in range(n_points):
+            theta = 2 * pi * (i / n_points)
+            phi = (pi / 2) * (z_i / z_points)
+            x = radius * np.cos(theta) * np.sin(phi)
+            y = radius * np.sin(theta) * np.sin(phi)
+            z = radius * np.cos(phi)
+            if z == 1 and len(points) > 0:
+                continue
+            points.append((x, y, z))
+    return points
+
+
 def get_points_inside_circle(min_radius, max_radius, n_points=100):
     def get_random_point_in_circle(min_radius, max_radius):
         t = 2 * math.pi * random()
@@ -174,7 +192,8 @@ def main():
 
     n_points = 20 # 50
     # points = get_points_in_circumference(radius=1, n_points=round(n_points))
-    points = get_points_in_sphere(radius=1, n_points=n_points, z_points=4, z_end=5)
+    points = get_points_in_sphere_polar(n_points=n_points, z_points=6, radius=1)
+    print(f"LEN: {len(points)}")
     for x, y, z in points:
         # vector_embeds = map_2x2_to_2d(matrix_embeds, x, y)
         vector_embeds = map_3x3_to_2d(matrix_embeds, x, y, z)
