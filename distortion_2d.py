@@ -99,8 +99,8 @@ def plot3d(xs, ys, zs, title):
     points = ax.scatter(xs, ys, c=zs, s=50, cmap=cmap)
     f.colorbar(points)
     plt.title(title)
-    plt.show()
-    # plt.savefig("plots/distortion_2d/" + title + ".png")
+    # plt.show()
+    plt.savefig("plots/distortion_2d/" + title + ".png")
 
 
 def map_2x2_to_2d(matrix_embeds, x, y):
