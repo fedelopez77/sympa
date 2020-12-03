@@ -9,8 +9,10 @@ PREPROCESSED_FILE = "preprocessed-data.pt"
 PLOT_EXPORT_PATH = Path("plots")
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+BACKEND = "gloo"
 if torch.cuda.is_available():
     torch.cuda.set_device(device=DEVICE)
+    BACKEND = "nccl"
 
 DEFAULT_DTYPE = torch.float64
 torch.set_default_dtype(DEFAULT_DTYPE)

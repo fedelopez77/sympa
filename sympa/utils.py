@@ -19,6 +19,8 @@ def set_seed(seed):
 
 def get_logging(level=logging.DEBUG):
     log = logging.getLogger(__name__)
+    log.parent.disabled = True
+    log.propagate = False
     if log.handlers:
         return log
     log.setLevel(level)

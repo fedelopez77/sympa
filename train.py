@@ -1,14 +1,17 @@
+import os
 import argparse
 import random
 import torch
+import torch.multiprocessing as mp
+import torch.distributed as dist
+from torch.nn.parallel import DistributedDataParallel
+from torch.utils.data import DataLoader, TensorDataset, SequentialSampler
+from torch.utils.data.distributed import DistributedSampler
 from geoopt.optim import RiemannianSGD
 from sympa import config
 from sympa.utils import set_seed, get_logging, scale_triplets, subsample_triplets
 from sympa.runner import Runner
 from sympa.model import Model
-
-
-log = get_logging()
 
 
 def config_parser(parser):
@@ -38,6 +41,7 @@ def config_parser(parser):
     parser.add_argument("--subsample", default=-1, type=float, help="Subsamples the % of closest triplets")
 
     # Others
+    parser.add_argument("--n_procs", default=4, type=int, help="Number of process to create")
     parser.add_argument("--load_model", default="", type=str, help="Load model from this file")
     parser.add_argument("--results_file", default="out/results.csv", type=str, help="Exports final results to this file")
     parser.add_argument("--save_epochs", default=10001, type=int, help="Exports every n epochs")
@@ -50,6 +54,7 @@ def get_model(args):
         saved_data = torch.load(args.load_model)
         model.load_state_dict(saved_data["model"])
     model.to(config.DEVICE)
+    model = DistributedDataParallel(model, device_ids=None)
     return model
 
 
@@ -59,7 +64,7 @@ def get_scheduler(optimizer, args):
     return torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=patience, factor=factor)
 
 
-def load_training_data(args):
+def load_training_data(args, log):
     data_path = config.PREP_PATH / f"{args.data}/{config.PREPROCESSED_FILE}"
     log.info(f"Loading data from {data_path}")
     data = torch.load(data_path)
@@ -74,37 +79,49 @@ def load_training_data(args):
         all_triplets = scale_triplets(all_triplets)
         sub_triplets = scale_triplets(sub_triplets)
 
-    train_src_dst_ids = [(src, dst) for src, dst, _ in sub_triplets]
-    train_distances = [distance for _, _, distance in sub_triplets]
-    train_src_dst_ids = torch.LongTensor(train_src_dst_ids).to(config.DEVICE)
-    train_distances = torch.Tensor(train_distances).to(config.DEVICE)
+    train_src_dst_ids = torch.LongTensor([(src, dst) for src, dst, _ in sub_triplets]).to(config.DEVICE)
+    train_distances = torch.Tensor([distance for _, _, distance in sub_triplets]).to(config.DEVICE)
 
+    valid_src_dst_ids = train_src_dst_ids
+    valid_distances = train_distances
     if args.subsample > 0:
         # train triplets are a subsample, valid triplets are all
-        valid_src_dst_ids = [(src, dst) for src, dst, _ in all_triplets]
-        valid_distances = [distance for _, _, distance in all_triplets]
-        valid_src_dst_ids = torch.LongTensor(valid_src_dst_ids).to(config.DEVICE)
-        valid_distances = torch.Tensor(valid_distances).to(config.DEVICE)
-        return id2node, train_src_dst_ids, train_distances, valid_src_dst_ids, valid_distances
+        valid_src_dst_ids = torch.LongTensor([(src, dst) for src, dst, _ in all_triplets]).to(config.DEVICE)
+        valid_distances = torch.Tensor([distance for _, _, distance in all_triplets]).to(config.DEVICE)
 
-    # train and validation triplets are the same
-    return id2node, train_src_dst_ids, train_distances, train_src_dst_ids, train_distances
+    train_batch_size = args.batch_size // args.n_procs
+    log.info(f"Batch size {train_batch_size} for {args.n_procs} processes")
+    train_triples = TensorDataset(train_src_dst_ids, train_distances)
+    train_sampler = DistributedSampler(train_triples, num_replicas=args.n_procs, rank=args.this_rank)
+    train_loader = DataLoader(dataset=train_triples, batch_size=train_batch_size, shuffle=False, num_workers=0,
+                              pin_memory=True, sampler=train_sampler)
+
+    valid_triples = TensorDataset(valid_src_dst_ids, valid_distances)
+    valid_loader = DataLoader(valid_triples, sampler=SequentialSampler(valid_triples), batch_size=args.batch_size)
+
+    return id2node, train_loader, valid_loader
 
 
-def main():
-    parser = argparse.ArgumentParser("train.py")
-    config_parser(parser)
-    args = parser.parse_args()
-    log.info(args)
+def main(this_rank, args):
+    """
+    :param this_rank: process "rank" or "order" of all spawned processes by mp.spawn.
+                    Value will be between [0, nprocs - 1]
+    :param args:
+    """
+    # parser = argparse.ArgumentParser("train.py")
+    # config_parser(parser)
+    # args = parser.parse_args()
+    # log.info(args)
+    log = get_logging()
+    args.this_rank = this_rank
+    dist.init_process_group(backend=config.BACKEND, world_size=args.n_procs, rank=args.this_rank)
 
-    seed = args.seed if args.seed > 0 else random.randint(1, 1000000)
-    set_seed(seed)
-
-    id2node, train_src_dst_ids, train_distances, valid_src_dst_ids, valid_distances = load_training_data(args)
+    id2node, train_loader, valid_loader = load_training_data(args, log)
 
     args.num_points = len(id2node)
     model = get_model(args)
-    optimizer = RiemannianSGD(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay, stabilize=10)
+    optimizer = RiemannianSGD(model.parameters(), lr=args.learning_rate, # * args.n_procs,
+                              weight_decay=args.weight_decay, stabilize=10)
     scheduler = get_scheduler(optimizer, args)
 
     log.info(f"GPU's available: {torch.cuda.device_count()}")
@@ -113,11 +130,23 @@ def main():
     log.info(model)
 
     runner = Runner(model, optimizer, scheduler=scheduler, id2node=id2node, args=args,
-                    train_src_dst_ids=train_src_dst_ids, train_distances=train_distances,
-                    valid_src_dst_ids=valid_src_dst_ids, valid_distances=valid_distances)
+                    train_loader=train_loader, valid_loader=valid_loader)
     runner.run()
     log.info("Done!")
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser("train.py")
+    config_parser(parser)
+    args = parser.parse_args()
+    log = get_logging()
+    log.info(args)
+
+    # set one unique seed for all process
+    seed = args.seed if args.seed > 0 else random.randint(1, 1000000)
+    set_seed(seed)
+
+    # DDP config
+    os.environ['MASTER_ADDR'] = 'localhost'
+    os.environ['MASTER_PORT'] = '12355'
+    mp.spawn(main, nprocs=args.n_procs, args=(args,))

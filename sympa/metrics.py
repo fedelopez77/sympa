@@ -24,13 +24,13 @@ class AverageDistortionMetric:
 
 class MeanAveragePrecisionMetric:
 
-    def __init__(self, triplets):
+    def __init__(self, triples):
         """
-        :param triplets: TensorDataset
+        :param triples: TensorDataset
         """
         neighbors = defaultdict(set)
-        for i in range(len(triplets)):
-            (src, dst), distance = triplets[i][0].tolist(), triplets[i][1].tolist()
+        for i in range(len(triples)):
+            (src, dst), distance = triples[i][0].tolist(), triples[i][1].tolist()
             if distance == 1:
                 neighbors[src].add(dst)
                 neighbors[dst].add(src)
