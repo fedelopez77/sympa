@@ -3,7 +3,7 @@ SCRIPT = """#!/bin/bash
 #SBATCH --job-name=sympa
 #SBATCH --output=/hits/basement/nlp/lopezfo/out/sympa/job-out/out-%j
 #SBATCH --error=/hits/basement/nlp/lopezfo/out/sympa/job-out/err-%j
-#SBATCH --time=1-23:00:00
+#SBATCH --time=1-23:59:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --partition=${py_partition}-deep.p
@@ -21,10 +21,9 @@ MODEL="$py_model"
 DIMS=$py_dim
 PREP="$py_prep"
 RESULTS_FILE="out/$${MODEL}$${DIMS}d-$${PREP}"
-LRS=(1e-2 7e-3)
-MAX_GRADS=(100 250 500)
-BATCH_SIZES=(2048 512 64)
-
+LRS=(2e-2)
+MAX_GRADS=(300)
+BATCH_SIZES=(128)
 
 if [[ $$(hostname -s) = pascal-* ]] || [[ $$(hostname -s) = skylake-* ]]; then
     module load CUDA/9.2.88-GCC-7.3.0-2.30
@@ -56,11 +55,12 @@ for BS in $${BATCH_SIZES[@]};
                 --model=$$MODEL \\
                 --dims=$$DIMS \\
                 --learning_rate=$$LR \\
-                --val_every=5 \\
-                --patience=25 \\
+                --val_every=25 \\
+                --patience=50 \\
                 --max_grad_norm=$$MGN \\
                 --batch_size=$$BS \\
-                --epochs=1500 \\
+                --epochs=3000 \\
+                --save_epochs=750 \\
                 --results_file=$$RESULTS_FILE \\
                 --seed=-1 > /hits/basement/nlp/lopezfo/out/sympa/runs/$${RUN_ID}
         done
@@ -71,6 +71,7 @@ done
 from string import Template
 import itertools
 import subprocess
+from datetime import datetime
 
 INSTANCES = {"skylake": 8, "pascal": 4}
 
@@ -79,10 +80,13 @@ if __name__ == '__main__':
     template = Template(SCRIPT)
 
     partition = "skylake"
-    models = ["bounded"]
-    dims = [2, 3]
-    preps = ["exp-chordal-47"]
-    runs = [1]
+    models = ["prod-hyhy", "prod-hyeu"]
+    dims = [6, 12, 20]
+    #preps = ["grid3d-125", "grid4d-256", "prod-cart-treegrid2d", "prod-cart-treetree", "prod-root-treegrids16-2-4", "prod-root-gridtrees9-2-5", "bio-diseasome", "usca312"]
+    # preps = ["bio-diseasome", "usca312"]
+    preps = ["prod-root-treegrids16-2-4", "prod-root-gridtrees9-2-5"]
+    runs = [3]
+    timestamp = str(datetime.now().strftime("%Y%m%d%H%M%S"))
 
     for i, (model, dim, prep, run) in enumerate(itertools.product(models, dims, preps, runs)):
         instance = (i % INSTANCES[partition]) + 1
@@ -98,5 +102,5 @@ if __name__ == '__main__':
             f.write(final_script)
 
         op_res = subprocess.run(["sbatch", file_name], capture_output=True, check=True)
-        print(f"Job {i} vars: {vars}\nJob number: {op_res.stdout.decode()}")
+        print(f"{timestamp} - Job {i} vars: {vars} PID: {op_res.stdout.decode()}")
     print("Done!")
