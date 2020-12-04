@@ -1,8 +1,6 @@
-import os
 import argparse
 import random
 import torch
-import torch.multiprocessing as mp
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel
 from torch.utils.data import DataLoader, TensorDataset, SequentialSampler
@@ -41,7 +39,7 @@ def config_parser(parser):
     parser.add_argument("--subsample", default=-1, type=float, help="Subsamples the % of closest triplets")
 
     # Others
-    parser.add_argument("--local_rank", type=int)
+    parser.add_argument("--local_rank", type=int, help="Local process rank assigned by torch.distributed.launch")
     parser.add_argument("--n_procs", default=4, type=int, help="Number of process to create")
     parser.add_argument("--load_model", default="", type=str, help="Load model from this file")
     parser.add_argument("--results_file", default="out/results.csv", type=str, help="Exports final results to this file")
@@ -103,21 +101,19 @@ def load_training_data(args, log):
     return id2node, train_loader, valid_loader
 
 
-def main(local_rank, args):
-    """
-    :param local_rank: process "rank" or "order" of all spawned processes by mp.spawn.
-                    Value will be between [0, nprocs - 1]
-    :param args:
-    """
-    # parser = argparse.ArgumentParser("train.py")
-    # config_parser(parser)
-    # args = parser.parse_args()
-    # log.info(args)
-    # log = get_logging()
-    log.info(f"Num Threads: {torch.get_num_threads()}")
-    torch.set_num_threads(1)
-    log.info(f"NEW Num Threads: {torch.get_num_threads()}")
+def main():
+    parser = argparse.ArgumentParser("train.py")
+    config_parser(parser)
+    args = parser.parse_args()
+    log = get_logging()
+    if args.local_rank == 0:
+        log.info(args)
+
     dist.init_process_group(backend=config.BACKEND, init_method='env://') # world_size=args.n_procs, rank=args.local_rank)
+
+    # sets random seed
+    seed = args.seed if args.seed > 0 else random.randint(1, 1000000)
+    set_seed(seed)
 
     id2node, train_loader, valid_loader = load_training_data(args, log)
 
@@ -127,10 +123,11 @@ def main(local_rank, args):
                               weight_decay=args.weight_decay, stabilize=10)
     scheduler = get_scheduler(optimizer, args)
 
-    log.info(f"GPU's available: {torch.cuda.device_count()}")
-    n_params = sum([p.nelement() for p in model.parameters() if p.requires_grad])
-    log.info(f"Points: {args.num_points}, dims: {args.dims}, number of parameters: {n_params}")
-    log.info(model)
+    if args.local_rank == 0:
+        log.info(f"GPU's available: {torch.cuda.device_count()}")
+        n_params = sum([p.nelement() for p in model.parameters() if p.requires_grad])
+        log.info(f"Points: {args.num_points}, dims: {args.dims}, number of parameters: {n_params}")
+        log.info(model)
 
     runner = Runner(model, optimizer, scheduler=scheduler, id2node=id2node, args=args,
                     train_loader=train_loader, valid_loader=valid_loader)
@@ -138,20 +135,5 @@ def main(local_rank, args):
     log.info("Done!")
 
 
-# if __name__ == "__main__":
-parser = argparse.ArgumentParser("train.py")
-config_parser(parser)
-args = parser.parse_args()
-log = get_logging()
-log.info(args)
-
-# set one unique seed for all process
-seed = args.seed if args.seed > 0 else random.randint(1, 1000000)
-set_seed(seed)
-
-main(args.local_rank, args)
-
-# DDP config
-# os.environ['MASTER_ADDR'] = 'localhost'
-# os.environ['MASTER_PORT'] = '12355'
-# mp.spawn(main, nprocs=args.n_procs, args=(args,))
+if __name__ == "__main__":
+    main()
