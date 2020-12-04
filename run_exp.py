@@ -5,10 +5,10 @@ SCRIPT = """#!/bin/bash
 #SBATCH --error=/hits/basement/nlp/lopezfo/out/sympa/job-out/err-%j
 #SBATCH --time=1-23:00:00
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=1
-#SBATCH --partition=${py_partition}-deep.p
-#SBATCH --nodelist=${py_partition}-deep-[0${py_instance}]
+#SBATCH --cpus-per-task=${py_nproc}
+#SBATCH --partition=${py_partition}.p
 
+# "SBATCH" --nodelist=skylake-deep-[01]
 # "SBATCH" --gres=gpu:1
 # "SBATCH" --partition=skylake-deep.p,pascal-deep.p,pascal-crunch.p
 # "SBATCH" --exclude=skylake-deep-[01],pascal-crunch-01
@@ -30,18 +30,22 @@ if [[ $$(hostname -s) = pascal-* ]] || [[ $$(hostname -s) = skylake-* ]]; then
     module load CUDA/9.2.88-GCC-7.3.0-2.30
 fi
 
+if [[ $(hostname -s) = cascade-* ]]; then
+    module load CUDA/10.1.243-GCC-8.3.0
+fi
+
 . /home/lopezfo/anaconda3/etc/profile.d/conda.sh 
 conda deactivate
 conda deactivate
 conda activate sympa
 cd /home/lopezfo/run-sympa/
 
-if [ "$py_do_pull" == "1" ]; then
-    git co -- .
-    git pull
-    git co $$BRANCH
-    git pull
-fi
+# if [ "$py_do_pull" == "1" ]; then
+#     git co -- .
+#     git pull
+#     git co $$BRANCH
+#     git pull
+# fi
 
 for BS in $${BATCH_SIZES[@]}; 
     do
@@ -50,14 +54,15 @@ for BS in $${BATCH_SIZES[@]};
         for MGN in $${MAX_GRADS[@]}; 
         do
             RUN_ID=r$$MODEL$$DIMS-$$PREP-lr$$LR-mgr$$MGN-bs$$BS-$$RUN
-            python train.py \\
+            python -m torch.distributed.launch --nproc_per_node=${py_nproc} train.py \\
+                --n_procs=${py_nproc} \\
                 --data=$$PREP \\
                 --run_id=$$RUN_ID \\
                 --model=$$MODEL \\
                 --dims=$$DIMS \\
                 --learning_rate=$$LR \\
-                --val_every=5 \\
-                --patience=25 \\
+                --val_every=25 \\
+                --patience=50 \\
                 --max_grad_norm=$$MGN \\
                 --batch_size=$$BS \\
                 --epochs=1500 \\
@@ -72,25 +77,22 @@ from string import Template
 import itertools
 import subprocess
 
-INSTANCES = {"skylake": 8, "pascal": 4}
-
 
 if __name__ == '__main__':
     template = Template(SCRIPT)
 
-    partition = "skylake"
+    partition = "cascade"
+    nprocs = 10
     models = ["bounded"]
     dims = [2, 3]
     preps = ["exp-chordal-47"]
     runs = [1]
 
     for i, (model, dim, prep, run) in enumerate(itertools.product(models, dims, preps, runs)):
-        instance = (i % INSTANCES[partition]) + 1
         do_pull = 1 if i == 0 else 0
 
-        vars = {"py_model": model, "py_dim": dim, "py_prep": prep,
-                "py_run": run, "py_partition": partition, "py_instance": instance,
-                "py_do_pull": do_pull}
+        vars = {"py_model": model, "py_dim": dim, "py_prep": prep, "py_nproc": nprocs,
+                "py_run": run, "py_partition": partition, "py_do_pull": do_pull}
         final_script = template.substitute(vars)
 
         file_name = "job_script.sh"

@@ -115,6 +115,10 @@ def main():
     seed = args.seed if args.seed > 0 else random.randint(1, 1000000)
     set_seed(seed)
 
+    # correct parameters due to distributed training
+    args.learning_rate *= args.n_procs
+    # TODO: see if I should do args.max_grad_norm = args.max_grad_norm / args.n_procs
+
     id2node, train_loader, valid_loader = load_training_data(args, log)
 
     args.num_points = len(id2node)
