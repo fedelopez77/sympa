@@ -66,7 +66,7 @@ def get_scheduler(optimizer, args):
 def load_training_data(args, log):
     data_path = config.PREP_PATH / f"{args.data}/{config.PREPROCESSED_FILE}"
     log.info(f"Loading data from {data_path}")
-    data = torch.load(data_path)
+    data = torch.load(str(data_path))
     id2node = data["id2node"]
     all_triplets = list(data["triplets"])
     if args.subsample > 0:

@@ -1,9 +1,9 @@
 SCRIPT = """#!/bin/bash
 
-#SBATCH --job-name=sympa
+#SBATCH --job-name=$py_model
 #SBATCH --output=/hits/basement/nlp/lopezfo/out/sympa/job-out/out-%j
 #SBATCH --error=/hits/basement/nlp/lopezfo/out/sympa/job-out/err-%j
-#SBATCH --time=1-23:00:00
+#SBATCH --time=23:59:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=${py_nproc}
 #SBATCH --partition=${py_partition}.p
@@ -21,18 +21,19 @@ MODEL="$py_model"
 DIMS=$py_dim
 PREP="$py_prep"
 RESULTS_FILE="out/$${MODEL}$${DIMS}d-$${PREP}"
-LRS=(1e-2 7e-3)
-MAX_GRADS=(100 250 500)
-BATCH_SIZES=(2048 512 64)
+LRS=(1e-2 5e-3 1e-3)
+MAX_GRADS=(5 50 250)
+BATCH_SIZES=(128 512 2048)
+SEED=$$RANDOM
 
 
-if [[ $$(hostname -s) = pascal-* ]] || [[ $$(hostname -s) = skylake-* ]]; then
-    module load CUDA/9.2.88-GCC-7.3.0-2.30
-fi
+# if [[ $$(hostname -s) = pascal-* ]] || [[ $$(hostname -s) = skylake-* ]]; then
+#     module load CUDA/9.2.88-GCC-7.3.0-2.30
+# fi
 
-if [[ $(hostname -s) = cascade-* ]]; then
-    module load CUDA/10.1.243-GCC-8.3.0
-fi
+# if [[ $$(hostname -s) = cascade-* ]]; then
+#     module load CUDA/10.1.243-GCC-8.3.0
+# fi
 
 . /home/lopezfo/anaconda3/etc/profile.d/conda.sh 
 conda deactivate
@@ -67,11 +68,12 @@ for BS in $${BATCH_SIZES[@]};
                 --batch_size=$$BS \\
                 --epochs=1500 \\
                 --results_file=$$RESULTS_FILE \\
-                --seed=-1 > /hits/basement/nlp/lopezfo/out/sympa/runs/$${RUN_ID}
+                --seed=$$SEED
         done
     done
 done
 """
+#> /hits/basement/nlp/lopezfo/out/sympa/runs/$${RUN_ID}
 
 from string import Template
 import itertools
@@ -83,10 +85,10 @@ if __name__ == '__main__':
 
     partition = "cascade"
     nprocs = 10
-    models = ["bounded"]
+    models = ["bounded", "upper"]
     dims = [2, 3]
-    preps = ["exp-chordal-47"]
-    runs = [1]
+    preps = ["grid3d-125", "grid4d-256"]
+    runs = [1, 2]
 
     for i, (model, dim, prep, run) in enumerate(itertools.product(models, dims, preps, runs)):
         do_pull = 1 if i == 0 else 0
