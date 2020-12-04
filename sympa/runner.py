@@ -25,7 +25,7 @@ class Runner(object):
         self.metric = AverageDistortionMetric()
         self.args = args
         self.log = get_logging()
-        self.is_main_process = args.this_rank == 0
+        self.is_main_process = args.local_rank == 0
         if self.is_main_process:
             self.writer = SummaryWriter(config.TENSORBOARD_PATH / args.run_id)
 
@@ -55,7 +55,7 @@ class Runner(object):
                 distortion = self.evaluate(self.valid_loader)
                 if self.is_main_process:
                     self.writer.add_scalar("val/distortion", distortion, epoch)
-                self.log.info(f"RANK {self.args.this_rank}: Results ep {epoch}: tr loss: {train_loss:.1f}, val avg distortion: {distortion * 100:.2f}")
+                self.log.info(f"RANK {self.args.local_rank}: Results ep {epoch}: tr loss: {train_loss:.1f}, val avg distortion: {distortion * 100:.2f}")
 
                 self.scheduler.step(distortion)
 
@@ -69,10 +69,10 @@ class Runner(object):
 
                 # early stopping
                 if epoch - best_epoch >= self.args.patience * 3:
-                    self.log.info(f"RANK {self.args.this_rank}: Early stopping at epoch {epoch}!!!")
+                    self.log.info(f"RANK {self.args.local_rank}: Early stopping at epoch {epoch}!!!")
                     break
 
-        self.log.info(f"RANK {self.args.this_rank}: Final evaluation on best model from epoch {best_epoch}")
+        self.log.info(f"RANK {self.args.local_rank}: Final evaluation on best model from epoch {best_epoch}")
         self.dpp_model.load_state_dict(best_model_state)
 
         distortion = self.evaluate(self.valid_loader)

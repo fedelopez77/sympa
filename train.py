@@ -41,6 +41,7 @@ def config_parser(parser):
     parser.add_argument("--subsample", default=-1, type=float, help="Subsamples the % of closest triplets")
 
     # Others
+    parser.add_argument("--local_rank", type=int)
     parser.add_argument("--n_procs", default=4, type=int, help="Number of process to create")
     parser.add_argument("--load_model", default="", type=str, help="Load model from this file")
     parser.add_argument("--results_file", default="out/results.csv", type=str, help="Exports final results to this file")
@@ -92,7 +93,7 @@ def load_training_data(args, log):
     train_batch_size = args.batch_size // args.n_procs
     log.info(f"Batch size {train_batch_size} for {args.n_procs} processes")
     train_triples = TensorDataset(train_src_dst_ids, train_distances)
-    train_sampler = DistributedSampler(train_triples, num_replicas=args.n_procs, rank=args.this_rank)
+    train_sampler = DistributedSampler(train_triples, num_replicas=args.n_procs, rank=args.local_rank)
     train_loader = DataLoader(dataset=train_triples, batch_size=train_batch_size, shuffle=False, num_workers=0,
                               pin_memory=True, sampler=train_sampler)
 
@@ -102,9 +103,9 @@ def load_training_data(args, log):
     return id2node, train_loader, valid_loader
 
 
-def main(this_rank, args):
+def main(local_rank, args):
     """
-    :param this_rank: process "rank" or "order" of all spawned processes by mp.spawn.
+    :param local_rank: process "rank" or "order" of all spawned processes by mp.spawn.
                     Value will be between [0, nprocs - 1]
     :param args:
     """
@@ -112,9 +113,11 @@ def main(this_rank, args):
     # config_parser(parser)
     # args = parser.parse_args()
     # log.info(args)
-    log = get_logging()
-    args.this_rank = this_rank
-    dist.init_process_group(backend=config.BACKEND, world_size=args.n_procs, rank=args.this_rank)
+    # log = get_logging()
+    log.info(f"Num Threads: {torch.get_num_threads()}")
+    torch.set_num_threads(1)
+    log.info(f"NEW Num Threads: {torch.get_num_threads()}")
+    dist.init_process_group(backend=config.BACKEND, init_method='env://') # world_size=args.n_procs, rank=args.local_rank)
 
     id2node, train_loader, valid_loader = load_training_data(args, log)
 
@@ -135,18 +138,20 @@ def main(this_rank, args):
     log.info("Done!")
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser("train.py")
-    config_parser(parser)
-    args = parser.parse_args()
-    log = get_logging()
-    log.info(args)
+# if __name__ == "__main__":
+parser = argparse.ArgumentParser("train.py")
+config_parser(parser)
+args = parser.parse_args()
+log = get_logging()
+log.info(args)
 
-    # set one unique seed for all process
-    seed = args.seed if args.seed > 0 else random.randint(1, 1000000)
-    set_seed(seed)
+# set one unique seed for all process
+seed = args.seed if args.seed > 0 else random.randint(1, 1000000)
+set_seed(seed)
 
-    # DDP config
-    os.environ['MASTER_ADDR'] = 'localhost'
-    os.environ['MASTER_PORT'] = '12355'
-    mp.spawn(main, nprocs=args.n_procs, args=(args,))
+main(args.local_rank, args)
+
+# DDP config
+# os.environ['MASTER_ADDR'] = 'localhost'
+# os.environ['MASTER_PORT'] = '12355'
+# mp.spawn(main, nprocs=args.n_procs, args=(args,))
