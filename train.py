@@ -105,15 +105,15 @@ def main():
     parser = argparse.ArgumentParser("train.py")
     config_parser(parser)
     args = parser.parse_args()
+    # sets random seed
+    seed = args.seed if args.seed > 0 else random.randint(1, 1000000)
+    set_seed(seed)
+
     log = get_logging()
     if args.local_rank == 0:
         log.info(args)
 
     dist.init_process_group(backend=config.BACKEND, init_method='env://') # world_size=args.n_procs, rank=args.local_rank)
-
-    # sets random seed
-    seed = args.seed if args.seed > 0 else random.randint(1, 1000000)
-    set_seed(seed)
 
     # correct parameters due to distributed training
     args.learning_rate *= args.n_procs
