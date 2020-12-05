@@ -55,7 +55,7 @@ for BS in $${BATCH_SIZES[@]};
         for MGN in $${MAX_GRADS[@]}; 
         do
             RUN_ID=r$$MODEL$$DIMS-$$PREP-lr$$LR-mgr$$MGN-bs$$BS-$$RUN
-            python -m torch.distributed.launch --nproc_per_node=${py_nproc} train.py \\
+            python -m torch.distributed.launch --nproc_per_node=${py_nproc} --master_port=${py_port} train.py \\
                 --n_procs=${py_nproc} \\
                 --data=$$PREP \\
                 --run_id=$$RUN_ID \\
@@ -78,6 +78,7 @@ done
 from string import Template
 import itertools
 import subprocess
+import random
 
 
 if __name__ == '__main__':
@@ -92,9 +93,11 @@ if __name__ == '__main__':
 
     for i, (model, dim, prep, run) in enumerate(itertools.product(models, dims, preps, runs)):
         do_pull = 1 if i == 0 else 0
+        port = random.randint(2048, 48000)  # TCP available ports
 
         vars = {"py_model": model, "py_dim": dim, "py_prep": prep, "py_nproc": nprocs,
-                "py_run": run, "py_partition": partition, "py_do_pull": do_pull}
+                "py_run": run, "py_partition": partition, "py_do_pull": do_pull,
+                "py_port": port}
         final_script = template.substitute(vars)
 
         file_name = "job_script.sh"
