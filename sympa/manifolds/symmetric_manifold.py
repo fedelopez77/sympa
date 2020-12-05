@@ -7,6 +7,29 @@ from sympa.math.caley_transform import caley_transform
 from sympa.math.takagi_factorization import TakagiFactorization
 
 
+def compute_finsler_metric(d: torch.Tensor) -> torch.Tensor:
+    """
+    Given d_i = log((1 + r_i) / (1 - r_i)), with r_i the eigenvalues of the crossratio matrix,
+    the Finsler distance is given by the summation of this values
+    :param d: b x n: d_i = log((1 + r_i) / (1 - r_i)), with r_i the eigenvalues of the crossratio matrix,
+    :return: b x 1: Finsler distance
+    """
+    res = torch.sum(d, dim=-1)
+    return res
+
+
+def compute_riemannian_metric(d: torch.Tensor) -> torch.Tensor:
+    """
+    Given d_i = log((1 + r_i) / (1 - r_i)), with r_i the eigenvalues of the crossratio matrix,
+    the Riemannian distance is given by the summation of this values
+    :param d: b x n: d_i = log((1 + r_i) / (1 - r_i)), with r_i the eigenvalues of the crossratio matrix,
+    :return: b x 1: Riemannian distance
+    """
+    res = torch.sum(d**2, dim=-1)
+    res = torch.sqrt(res)
+    return res
+
+
 class SymmetricManifold(Manifold, ABC):
     """
     Manifold to work on spaces S_n = {z in Sym(n, C)}. This is, z models a point in the space S. z is a symmetric
@@ -20,7 +43,7 @@ class SymmetricManifold(Manifold, ABC):
     name = "Symmetric Space"
     __scaling__ = Manifold.__scaling__.copy()
 
-    def __init__(self, ndim=1):
+    def __init__(self, ndim=1, use_finsler_metric=False):
         """
         Space of symmetric matrices of shape ndim x ndim
 
@@ -30,6 +53,7 @@ class SymmetricManifold(Manifold, ABC):
         self.ndim = ndim
         self.takagi_factorization = TakagiFactorization(ndim)
         self.projected_points = 0
+        self.compute_metric = compute_finsler_metric if use_finsler_metric else compute_riemannian_metric
 
     def dist(self, z1: torch.Tensor, z2: torch.Tensor, *, keepdim=False) -> torch.Tensor:
         """
@@ -57,10 +81,10 @@ class SymmetricManifold(Manifold, ABC):
         assert torch.all(eigvalues >= 0 - eps), f"Eigenvalues: {eigvalues}"
         assert torch.all(eigvalues <= 1.01), f"Eigenvalues: {eigvalues}"
 
-        # ri = (1 + di) / (1 - di) # TODO: see if clamping only denom or whole result in case values are too large
-        r = (1 + eigvalues) / (1 - eigvalues).clamp(min=eps)
-        res = torch.sum(torch.log(r)**2, dim=-1)
-        res = torch.sqrt(res)
+        # di = (1 + ri) / (1 - ri) # TODO: see if clamping only denom or whole result in case values are too large
+        d = (1 + eigvalues) / (1 - eigvalues).clamp(min=eps)
+        d = torch.log(d)
+        res = self.compute_metric(d)
         return res
 
     def retr(self, x: torch.Tensor, u: torch.Tensor) -> torch.Tensor:

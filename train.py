@@ -20,6 +20,7 @@ def config_parser(parser):
     parser.add_argument("--model", default="upper", type=str, help="Model type: 'euclidean', 'poincare', "
                                                                        "'upper' or 'bounded'")
     parser.add_argument("--dims", default=3, type=int, help="Dimensions for the model.")
+    parser.add_argument("--use_finsler_metric", default=1, type=int, help="Use finsler metric or not")
     parser.add_argument("--scale_init", default=1, type=float, help="Value to init scale.")
     parser.add_argument("--scale_coef", default=1, type=float, help="Coefficient to divide scale.")
     parser.add_argument("--train_scale", default=0, type=int, help="Whether to train scaling or not.")

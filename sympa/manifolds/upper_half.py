@@ -21,8 +21,8 @@ class UpperHalfManifold(SymmetricManifold):
     name = "UpperHalfSpace"
     __scaling__ = Manifold.__scaling__.copy()
 
-    def __init__(self, ndim=1):
-        super().__init__(ndim=ndim)
+    def __init__(self, ndim=1, use_finsler_metric=False):
+        super().__init__(ndim=ndim, use_finsler_metric=use_finsler_metric)
 
     def egrad2rgrad(self, z: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
         """

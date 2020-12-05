@@ -16,14 +16,14 @@ SCRIPT = """#!/bin/bash
 # "SBATCH" --mem=250G real memory required per node WARN: exclusive with mem-per-cpu
 
 RUN=$py_run
-BRANCH="master"
+BRANCH="feat/finsler"
 MODEL="$py_model"
 DIMS=$py_dim
 PREP="$py_prep"
-RESULTS_FILE="out/$${MODEL}$${DIMS}d-$${PREP}"
+RESULTS_FILE="out/$${MODEL}$${DIMS}d-$${PREP}-finsler"
+BATCH_SIZES=(2048 512 128)
 LRS=(1e-2 5e-3 1e-3)
 MAX_GRADS=(5 50 250)
-BATCH_SIZES=(128 512 2048)
 SEED=$$RANDOM
 
 
@@ -54,9 +54,10 @@ for BS in $${BATCH_SIZES[@]};
     do
         for MGN in $${MAX_GRADS[@]}; 
         do
-            RUN_ID=r$$MODEL$$DIMS-$$PREP-lr$$LR-mgr$$MGN-bs$$BS-$$RUN
+            RUN_ID=r$$MODEL$$DIMS-$$PREP-finserlmetric-lr$$LR-mgr$$MGN-bs$$BS-$$RUN
             python -m torch.distributed.launch --nproc_per_node=${py_nproc} --master_port=${py_port} train.py \\
                 --n_procs=${py_nproc} \\
+                --use_finsler_metric=1 \\
                 --data=$$PREP \\
                 --run_id=$$RUN_ID \\
                 --model=$$MODEL \\
