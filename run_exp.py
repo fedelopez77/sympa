@@ -54,8 +54,9 @@ for BS in $${BATCH_SIZES[@]};
     do
         for MGN in $${MAX_GRADS[@]}; 
         do
-            RUN_ID=r$$MODEL$$DIMS-$$PREP-finserlmetric-lr$$LR-mgr$$MGN-bs$$BS-$$RUN
-            python -m torch.distributed.launch --nproc_per_node=${py_nproc} --master_port=${py_port} train.py \\
+            MYPORT=`shuf -i 2049-48000 -n 1`
+            RUN_ID=r$$MODEL$$DIMS-$$PREP-finsler-lr$$LR-mgr$$MGN-bs$$BS-$$RUN
+            python -m torch.distributed.launch --nproc_per_node=${py_nproc} --master_port=$$MYPORT train.py \\
                 --n_procs=${py_nproc} \\
                 --use_finsler_metric=1 \\
                 --data=$$PREP \\
@@ -69,12 +70,11 @@ for BS in $${BATCH_SIZES[@]};
                 --batch_size=$$BS \\
                 --epochs=1500 \\
                 --results_file=$$RESULTS_FILE \\
-                --seed=$$SEED
+                --seed=$$SEED > /hits/basement/nlp/lopezfo/out/sympa/runs/$${RUN_ID}
         done
     done
 done
 """
-#> /hits/basement/nlp/lopezfo/out/sympa/runs/$${RUN_ID}
 
 from string import Template
 import itertools
@@ -94,11 +94,9 @@ if __name__ == '__main__':
 
     for i, (model, dim, prep, run) in enumerate(itertools.product(models, dims, preps, runs)):
         do_pull = 1 if i == 0 else 0
-        port = random.randint(2048, 48000)  # TCP available ports
 
         vars = {"py_model": model, "py_dim": dim, "py_prep": prep, "py_nproc": nprocs,
-                "py_run": run, "py_partition": partition, "py_do_pull": do_pull,
-                "py_port": port}
+                "py_run": run, "py_partition": partition, "py_do_pull": do_pull}
         final_script = template.substitute(vars)
 
         file_name = "job_script.sh"
