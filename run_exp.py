@@ -20,10 +20,10 @@ BRANCH="feat/finsler"
 MODEL="$py_model"
 DIMS=$py_dim
 PREP="$py_prep"
-RESULTS_FILE="out/$${MODEL}$${DIMS}d-$${PREP}-finsler"
+RESULTS_FILE="out/$${MODEL}$${DIMS}d-$${PREP}-fininfinity"
 BATCH_SIZES=(2048 512 128)
-LRS=(1e-2 5e-3 1e-3)
-MAX_GRADS=(5 50 250)
+LRS=(1e-2 2e-3)
+MAX_GRADS=(10 50 250)
 SEED=$$RANDOM
 
 
@@ -55,10 +55,10 @@ for BS in $${BATCH_SIZES[@]};
         for MGN in $${MAX_GRADS[@]}; 
         do
             MYPORT=`shuf -i 2049-48000 -n 1`
-            RUN_ID=r$$MODEL$$DIMS-$$PREP-finsler-lr$$LR-mgr$$MGN-bs$$BS-$$RUN
+            RUN_ID=r$$MODEL$$DIMS-$$PREP-fininfinity-lr$$LR-mgr$$MGN-bs$$BS-$$RUN
             python -m torch.distributed.launch --nproc_per_node=${py_nproc} --master_port=$$MYPORT train.py \\
                 --n_procs=${py_nproc} \\
-                --use_finsler_metric=1 \\
+                --metric=2 \\
                 --data=$$PREP \\
                 --run_id=$$RUN_ID \\
                 --model=$$MODEL \\
@@ -68,7 +68,7 @@ for BS in $${BATCH_SIZES[@]};
                 --patience=50 \\
                 --max_grad_norm=$$MGN \\
                 --batch_size=$$BS \\
-                --epochs=1500 \\
+                --epochs=1000 \\
                 --results_file=$$RESULTS_FILE \\
                 --seed=$$SEED > /hits/basement/nlp/lopezfo/out/sympa/runs/$${RUN_ID}
         done
@@ -89,7 +89,7 @@ if __name__ == '__main__':
     nprocs = 10
     models = ["bounded", "upper"]
     dims = [2, 3]
-    preps = ["grid3d-125", "grid4d-256"]
+    preps = ["tree3-5", "grid3d-125", "grid4d-256"]
     runs = [1, 2]
 
     for i, (model, dim, prep, run) in enumerate(itertools.product(models, dims, preps, runs)):
