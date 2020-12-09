@@ -51,11 +51,11 @@ def config_parser(parser):
 
 def get_model(args):
     model = Model(args)
+    model.to(config.DEVICE)
+    model = DistributedDataParallel(model, device_ids=None)
     if args.load_model:
         saved_data = torch.load(args.load_model)
         model.load_state_dict(saved_data["model"])
-    model.to(config.DEVICE)
-    model = DistributedDataParallel(model, device_ids=None)
     return model
 
 
