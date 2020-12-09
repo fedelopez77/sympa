@@ -5,7 +5,6 @@ import torch
 from torch.nn.utils import clip_grad_norm_
 from tensorboardX import SummaryWriter
 from statistics import mean
-from tqdm import tqdm, trange
 from sympa import config
 from sympa.losses import AverageDistortionLoss
 from sympa.metrics import AverageDistortionMetric, MeanAveragePrecisionMetric
@@ -14,7 +13,7 @@ from sympa.utils import get_logging, write_results_to_file
 
 class Runner(object):
     def __init__(self, model, optimizer, scheduler, id2node, train_loader, valid_loader, args):
-        self.dpp_model = model
+        self.ddp_model = model
         self.model = model.module
         self.optimizer = optimizer
         self.scheduler = scheduler
@@ -65,7 +64,7 @@ class Runner(object):
                         self.log.info(f"Best val distortion: {distortion * 100:.3f}, mAP: {precision * 100:.2f} at epoch {epoch}")
                     best_distortion = distortion
                     best_epoch = epoch
-                    best_model_state = copy.deepcopy(self.dpp_model.state_dict())
+                    best_model_state = copy.deepcopy(self.ddp_model.state_dict())
 
                 # early stopping
                 if epoch - best_epoch >= self.args.patience * 3:
@@ -73,7 +72,7 @@ class Runner(object):
                     break
 
         self.log.info(f"RANK {self.args.local_rank}: Final evaluation on best model from epoch {best_epoch}")
-        self.dpp_model.load_state_dict(best_model_state)
+        self.ddp_model.load_state_dict(best_model_state)
 
         distortion = self.evaluate(self.valid_loader)
         precision = self.calculate_mAP()
@@ -88,14 +87,14 @@ class Runner(object):
         self.check_points_in_manifold()
         tr_loss = 0.0
         avg_grad_norm = 0.0
-        self.dpp_model.train()
-        self.dpp_model.zero_grad()
+        self.ddp_model.train()
+        self.ddp_model.zero_grad()
         self.optimizer.zero_grad()
 
         for step, batch in enumerate(train_split): # enumerate(tqdm(train_split, desc=f"epoch_{epoch_num}")):
             src_dst_ids, graph_distances = batch     # .to(config.DEVICE)    Dataset is already on DEVICE
 
-            manifold_distances = self.dpp_model(src_dst_ids)
+            manifold_distances = self.ddp_model(src_dst_ids)
 
             loss = self.loss.calculate_loss(graph_distances, manifold_distances)
             loss = loss / self.args.grad_accum_steps
@@ -109,9 +108,9 @@ class Runner(object):
 
             # update
             if (step + 1) % self.args.grad_accum_steps == 0:
-                clip_grad_norm_(self.dpp_model.parameters(), self.args.max_grad_norm)
+                clip_grad_norm_(self.ddp_model.parameters(), self.args.max_grad_norm)
                 self.optimizer.step()
-                self.dpp_model.zero_grad()
+                self.ddp_model.zero_grad()
                 self.optimizer.zero_grad()
 
         if self.is_main_process:
@@ -119,12 +118,12 @@ class Runner(object):
         return tr_loss / len(train_split)
 
     def evaluate(self, eval_split):
-        self.dpp_model.eval()
+        self.ddp_model.eval()
         total_distortion = []
         for batch in eval_split:        # tqdm(eval_split, desc="Evaluating"):
             src_dst_ids, graph_distances = batch     # .to(config.DEVICE)
             with torch.no_grad():
-                manifold_distances = self.dpp_model(src_dst_ids)
+                manifold_distances = self.ddp_model(src_dst_ids)
                 distortion = self.metric.calculate_metric(graph_distances, manifold_distances)
             total_distortion.extend(distortion.tolist())
 
@@ -139,13 +138,13 @@ class Runner(object):
     def build_distance_matrix(self):
         all_nodes = torch.arange(0, len(self.id2node)).unsqueeze(1)
         distance_matrix = torch.zeros((len(all_nodes), len(all_nodes)))
-        self.dpp_model.eval()
+        self.ddp_model.eval()
         for node_id in range(len(self.id2node)):
             src = torch.LongTensor([[node_id]]).repeat(len(all_nodes), 1)
             src[node_id] = (node_id + 1) % len(all_nodes)   # hack to not ask for the distance to the same value
             batch = torch.cat((src, all_nodes), dim=-1)
             with torch.no_grad():
-                distances = self.dpp_model(batch)
+                distances = self.ddp_model(batch)
             distances[node_id] = 0
             distance_matrix[node_id] = distances.view(-1)
         return distance_matrix
@@ -154,7 +153,7 @@ class Runner(object):
         # TODO save optimizer and scheduler
         save_path = config.CKPT_PATH / f"{self.args.run_id}-best-{epoch}ep"
         self.log.info(f"Saving model checkpoint to {save_path}")
-        torch.save({"model": self.dpp_model.state_dict(), "id2node": self.id2node}, save_path)
+        torch.save({"model": self.ddp_model.state_dict(), "id2node": self.id2node}, save_path)
 
     def set_burnin_lr(self, epoch):
         """Modifies lr if epoch is less than burn-in epochs"""

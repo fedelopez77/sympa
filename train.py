@@ -20,7 +20,8 @@ def config_parser(parser):
     parser.add_argument("--model", default="upper", type=str, help="Model type: 'euclidean', 'poincare', "
                                                                        "'upper' or 'bounded'")
     parser.add_argument("--dims", default=3, type=int, help="Dimensions for the model.")
-    parser.add_argument("--use_finsler_metric", default=1, type=int, help="Use finsler metric or not")
+    parser.add_argument("--metric", default=0, type=int, help="Metric type. Values: 0: Riemannian metric, "
+                                                              "1: Finsler one, 2: Finsler infinity")
     parser.add_argument("--scale_init", default=1, type=float, help="Value to init scale.")
     parser.add_argument("--scale_coef", default=1, type=float, help="Coefficient to divide scale.")
     parser.add_argument("--train_scale", default=0, type=int, help="Whether to train scaling or not.")
@@ -90,7 +91,7 @@ def load_training_data(args, log):
         valid_distances = torch.Tensor([distance for _, _, distance in all_triplets]).to(config.DEVICE)
 
     train_batch_size = args.batch_size // args.n_procs
-    log.info(f"Batch size {train_batch_size} for {args.n_procs} processes")
+    log.info(f"Batch size {train_batch_size} for {args.local_rank}/{args.n_procs} processes")
     train_triples = TensorDataset(train_src_dst_ids, train_distances)
     train_sampler = DistributedSampler(train_triples, num_replicas=args.n_procs, rank=args.local_rank)
     train_loader = DataLoader(dataset=train_triples, batch_size=train_batch_size, shuffle=False, num_workers=0,

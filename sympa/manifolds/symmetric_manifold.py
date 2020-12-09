@@ -3,18 +3,31 @@ from typing import Union, Tuple, Optional
 import torch
 from geoopt.manifolds.base import Manifold
 from sympa.math import symmetric_math as sm
+from sympa.manifolds.metric import Metric
 from sympa.math.caley_transform import caley_transform
 from sympa.math.takagi_factorization import TakagiFactorization
 
 
-def compute_finsler_metric(d: torch.Tensor) -> torch.Tensor:
+def compute_finsler_metric_one(d: torch.Tensor) -> torch.Tensor:
     """
     Given d_i = log((1 + r_i) / (1 - r_i)), with r_i the eigenvalues of the crossratio matrix,
-    the Finsler distance is given by the summation of this values
+    the Finsler distance one (F_{1})is given by the summation of this values
     :param d: b x n: d_i = log((1 + r_i) / (1 - r_i)), with r_i the eigenvalues of the crossratio matrix,
     :return: b x 1: Finsler distance
     """
     res = torch.sum(d, dim=-1)
+    return res
+
+
+def compute_finsler_metric_infinity(d: torch.Tensor) -> torch.Tensor:
+    """
+    The Finsler distance infinity (F_{\infty}) is given by d_n = log((1 + r_n) / (1 - r_n)),
+    with r_n the largest eigenvalues of the crossratio matrix,
+    :param d: b x n: d_i = log((1 + r_i) / (1 - r_i)), with r_i the eigenvalues of the crossratio matrix,
+            where r_0 the largest eigenvalue and r_{n-1} the smallest
+    :return: b x 1: Finsler distance
+    """
+    res = d[:, 0]
     return res
 
 
@@ -43,7 +56,7 @@ class SymmetricManifold(Manifold, ABC):
     name = "Symmetric Space"
     __scaling__ = Manifold.__scaling__.copy()
 
-    def __init__(self, ndim=1, use_finsler_metric=False):
+    def __init__(self, ndim=1, metric=Metric.RIEMANNIAN.value):
         """
         Space of symmetric matrices of shape ndim x ndim
 
@@ -53,7 +66,14 @@ class SymmetricManifold(Manifold, ABC):
         self.ndim = ndim
         self.takagi_factorization = TakagiFactorization(ndim)
         self.projected_points = 0
-        self.compute_metric = compute_finsler_metric if use_finsler_metric else compute_riemannian_metric
+        if metric == Metric.RIEMANNIAN.value:
+            self.compute_metric = compute_riemannian_metric
+        elif metric == Metric.FINSLER_ONE.value:
+            self.compute_metric = compute_finsler_metric_one
+        elif metric == Metric.FINSLER_INFINITY.value:
+            self.compute_metric = compute_finsler_metric_infinity
+        else:
+            raise ValueError(f"Unrecognized metric: {metric}")
 
     def dist(self, z1: torch.Tensor, z2: torch.Tensor, *, keepdim=False) -> torch.Tensor:
         """

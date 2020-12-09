@@ -1,6 +1,7 @@
 import torch
 from geoopt.manifolds.base import Manifold
 from sympa.manifolds import SymmetricManifold
+from sympa.manifolds.metric import Metric
 from sympa.math import symmetric_math as sm
 from sympa.utils import get_logging
 
@@ -21,8 +22,8 @@ class UpperHalfManifold(SymmetricManifold):
     name = "UpperHalfSpace"
     __scaling__ = Manifold.__scaling__.copy()
 
-    def __init__(self, ndim=1, use_finsler_metric=False):
-        super().__init__(ndim=ndim, use_finsler_metric=use_finsler_metric)
+    def __init__(self, ndim=1, metric=Metric.RIEMANNIAN.value):
+        super().__init__(ndim=ndim, metric=metric)
 
     def egrad2rgrad(self, z: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
         """

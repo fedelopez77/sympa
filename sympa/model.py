@@ -112,10 +112,10 @@ class Model(nn.Module):
             product = gt.ProductManifold((poincare, args.dims // 2), (euclidean, args.dims // 2))
             self.embeddings = VectorEmbeddings(args.num_points, args.dims, manifold=product)
         elif args.model == "upper":
-            manifold = UpperHalfManifold(args.dims, args.use_finsler_metric == 1)
+            manifold = UpperHalfManifold(args.dims, args.metric)
             self.embeddings = ComplexSymmetricMatrixEmbeddings(args.num_points, args.dims, manifold=manifold)
         elif args.model == "bounded":
-            manifold = BoundedDomainManifold(args.dims, args.use_finsler_metric == 1)
+            manifold = BoundedDomainManifold(args.dims, args.metric)
             self.embeddings = ComplexSymmetricMatrixEmbeddings(args.num_points, args.dims, manifold=manifold)
         else:
             raise ValueError(f"Unrecognized model option: {args.model}")
