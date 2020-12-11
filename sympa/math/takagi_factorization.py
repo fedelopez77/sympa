@@ -8,6 +8,14 @@ log = get_logging()
 
 
 class TakagiFactorization:
+    """
+    Given a complex symmetric matrix A, the Takagi factorization is an algorithm that
+    computes a real diagonal matrix D and a complex unitary matrix S such that
+        A = Ŝ D S^*
+    where:
+        Ŝ: S conjugate
+        S^*: S conjugate transpose
+    """
     def __init__(self, matrix_rank):
         self.rank = matrix_rank
         self.eigvalues_idx = torch.arange(start=0, end=2 * matrix_rank, step=2, dtype=torch.long, device=DEVICE)
