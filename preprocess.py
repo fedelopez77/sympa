@@ -1,6 +1,7 @@
 import argparse
 import networkx as nx
 from networkx.generators import expanders, social
+import networkit as nk
 import torch
 import sympa.utils as utils
 import sympa.config as config
@@ -95,37 +96,34 @@ def plot_graph(graph, path):
     plt.savefig(path / (graph.name + ".png"))
 
 
-def build_triplets(graph, node2id):
+def build_triples(graph):
     """
-    Builds triplets of (src, dst, distance) for each node in the graph, to all other connected nodes.
-
-    PRE: the distances in the graph are symmetric.
-    :param graph:
-    :param node2id:
-    :return: set of triplets
+    Builds triples of (src, dst, distance) for each node in the graph, to all other connected nodes.
+    PRE: distances in the graph are symmetric
+    :param graph: networkx graph
+    :return: set of triples
     """
-    if nx.is_weighted(graph):
-        lengths = dict(nx.all_pairs_dijkstra_path_length(graph))
-    else:
-        lengths = dict(nx.all_pairs_shortest_path_length(graph))
+    gk = nk.nxadapter.nx2nk(graph)
+    shortest_paths = nk.distance.APSP(gk).run().getDistances()
+    n_nodes = len(shortest_paths)
+    UNREACHABLE_DISTANCE = 1e10     # nk sets a very large distance value (~1e308) for unreachable nodes
 
-    triplets, pairs = set(), set()
-    for src, reachable_nodes in lengths.items():
-        for dst, distance in reachable_nodes.items():
-            if distance > 0:
-                src_id = node2id[src]
-                dst_id = node2id[dst]
-                if (dst_id, src_id) not in pairs:  # checks that the symmetric triplets is not there
-                    pairs.add((src_id, dst_id))
-                    triplets.add((src_id, dst_id, distance))
-    return triplets
+    triples, pairs = set(), set()
+    for i in range(n_nodes):
+        for j in range(i + 1, n_nodes):
+            distance = shortest_paths[i][j]
+            if 0 < distance < UNREACHABLE_DISTANCE:
+                if (j, i) not in pairs:  # checks that the symmetric triplets is not there
+                    pairs.add((i, j))
+                    triples.add((i, j, distance))
+    return triples
 
 
 def main():
     parser = argparse.ArgumentParser(description="preprocess.py")
     parser.add_argument("--run_id", required=True, help="Id of run to store data")
     parser.add_argument("--graph", default="grid", help="Graph type")
-    parser.add_argument("--nodes", default=10, type=int,
+    parser.add_argument("--nodes", default=125, type=int,
                         help="if --graph=grid it will create a grid of dims dimensions with n = int(nodes^(1/dims))")
     parser.add_argument("--grid_dims", default=3, type=int, help="if --graph=grid, number of dimensions")
     parser.add_argument("--tree_branching", default=3, type=int, help="if --graph=tree, branching factor of tree")
@@ -144,16 +142,16 @@ def main():
 
     log.info(f"Building graph: {args.graph}")
     graph = get_graph(args)
+    id2node = {i: node for i, node in enumerate(sorted(graph.nodes()))}
+    graph = nx.convert_node_labels_to_integers(graph, ordering="sorted")
     log.info(nx.info(graph))
+
     if args.plot_graph == 1:
         log.info("Plotting graph")
         plot_graph(graph, run_path)
 
-    nodes = list(graph.nodes())
-    id2node = {i: node for i, node in enumerate(nodes)}
-    node2id = {v: k for k, v in id2node.items()}
-    log.info(f"Building triplets for {len(nodes)} nodes")
-    triplets = build_triplets(graph, node2id)
+    log.info(f"Building triplets for {len(graph)} nodes")
+    triplets = build_triples(graph)
     log.info(f"Total triplets: {len(triplets)}")
 
     log.info(f"Saving to {run_path / config.PREPROCESSED_FILE}")
