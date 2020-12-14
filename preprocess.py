@@ -103,7 +103,12 @@ def build_triples(graph):
     :param graph: networkx graph
     :return: set of triples
     """
-    gk = nk.nxadapter.nx2nk(graph)
+    if nx.is_weighted(graph):
+        gk = nk.nxadapter.nx2nk(graph, weightAttr="weight")
+        distance_type = float
+    else:
+        gk = nk.nxadapter.nx2nk(graph)
+        distance_type = int
     shortest_paths = nk.distance.APSP(gk).run().getDistances()
     n_nodes = len(shortest_paths)
     UNREACHABLE_DISTANCE = 1e10     # nk sets a very large distance value (~1e308) for unreachable nodes
@@ -115,14 +120,14 @@ def build_triples(graph):
             if 0 < distance < UNREACHABLE_DISTANCE:
                 if (j, i) not in pairs:  # checks that the symmetric triplets is not there
                     pairs.add((i, j))
-                    triples.add((i, j, distance))
+                    triples.add((i, j, distance_type(distance)))
     return triples
 
 
 def main():
     parser = argparse.ArgumentParser(description="preprocess.py")
     parser.add_argument("--run_id", required=True, help="Id of run to store data")
-    parser.add_argument("--graph", default="grid", help="Graph type")
+    parser.add_argument("--graph", default="usca312", help="Graph type")
     parser.add_argument("--nodes", default=125, type=int,
                         help="if --graph=grid it will create a grid of dims dimensions with n = int(nodes^(1/dims))")
     parser.add_argument("--grid_dims", default=3, type=int, help="if --graph=grid, number of dimensions")
