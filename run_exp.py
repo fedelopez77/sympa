@@ -20,7 +20,7 @@ BRANCH="master"
 MODEL="$py_model"
 DIMS=$py_dim
 PREP="$py_prep"
-RESULTS_FILE="out/$${MODEL}$${DIMS}d-$${PREP}"
+RESULTS_FILE="out/$${MODEL}$${DIMS}d-$${PREP}-finsler"
 BATCH_SIZES=(2048 512 128)
 LRS=(1e-2 2e-3)
 MAX_GRADS=(10 50 250)
@@ -54,10 +54,10 @@ for BS in $${BATCH_SIZES[@]};
         for MGN in $${MAX_GRADS[@]}; 
         do
             MYPORT=`shuf -i 2049-48000 -n 1`
-            RUN_ID=r$$MODEL$$DIMS-$$PREP-lr$$LR-mgr$$MGN-bs$$BS-$$RUN
+            RUN_ID=r$$MODEL$$DIMS-$$PREP-finsler-lr$$LR-mgr$$MGN-bs$$BS-$$RUN
             python -m torch.distributed.launch --nproc_per_node=${py_nproc} --master_port=$$MYPORT train.py \\
                 --n_procs=${py_nproc} \\
-                --metric=0 \\
+                --metric=1 \\
                 --data=$$PREP \\
                 --run_id=$$RUN_ID \\
                 --model=$$MODEL \\
@@ -87,8 +87,10 @@ if __name__ == '__main__':
     partition = "cascade"
     nprocs = 10
     models = ["bounded", "upper"]
-    dims = [2, 3]
-    preps = ["tree3-5", "grid3d-125", "grid4d-256"]
+    dims = [2, 3, 4]
+    #preps = ["tree3-5", "grid3d-125", "grid4d-256"]
+    #preps = ["prod-cart-treegrid2d", "prod-cart-treetree", "usca312"]
+    preps = ["prod-root-treegrids16-2-4", "prod-root-gridtrees9-2-5", "bio-diseasome"]
     runs = [1, 2]
     timestamp = str(datetime.now().strftime("%Y%m%d%H%M%S"))
 
