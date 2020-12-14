@@ -3,6 +3,7 @@ import torch.nn as nn
 from sympa.utils import get_logging
 from sympa import config
 import geoopt as gt
+from sympa.manifolds.metric import Metric
 from sympa.manifolds import BoundedDomainManifold, UpperHalfManifold
 import abc
 
@@ -112,10 +113,22 @@ class Model(nn.Module):
             product = gt.ProductManifold((poincare, args.dims // 2), (euclidean, args.dims // 2))
             self.embeddings = VectorEmbeddings(args.num_points, args.dims, manifold=product)
         elif args.model == "upper":
-            manifold = UpperHalfManifold(args.dims, args.metric)
+            manifold = UpperHalfManifold(args.dims, metric=Metric.RIEMANNIAN.value)
+            self.embeddings = ComplexSymmetricMatrixEmbeddings(args.num_points, args.dims, manifold=manifold)
+        elif args.model == "upper-fone":
+            manifold = UpperHalfManifold(args.dims, metric=Metric.FINSLER_ONE.value)
+            self.embeddings = ComplexSymmetricMatrixEmbeddings(args.num_points, args.dims, manifold=manifold)
+        elif args.model == "upper-finf":
+            manifold = UpperHalfManifold(args.dims, metric=Metric.FINSLER_INFINITY.value)
             self.embeddings = ComplexSymmetricMatrixEmbeddings(args.num_points, args.dims, manifold=manifold)
         elif args.model == "bounded":
-            manifold = BoundedDomainManifold(args.dims, args.metric)
+            manifold = BoundedDomainManifold(args.dims, metric=Metric.RIEMANNIAN.value)
+            self.embeddings = ComplexSymmetricMatrixEmbeddings(args.num_points, args.dims, manifold=manifold)
+        elif args.model == "bounded-fone":
+            manifold = BoundedDomainManifold(args.dims, metric=Metric.FINSLER_ONE.value)
+            self.embeddings = ComplexSymmetricMatrixEmbeddings(args.num_points, args.dims, manifold=manifold)
+        elif args.model == "bounded-finf":
+            manifold = BoundedDomainManifold(args.dims, metric=Metric.FINSLER_INFINITY.value)
             self.embeddings = ComplexSymmetricMatrixEmbeddings(args.num_points, args.dims, manifold=manifold)
         else:
             raise ValueError(f"Unrecognized model option: {args.model}")

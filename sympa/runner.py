@@ -31,8 +31,8 @@ class Runner(object):
     def run(self):
         best_distortion, best_epoch = float("inf"), -1
         best_model_state = None
-        for epoch in range(1, self.args.epochs + 1): #trange(1, self.args.epochs + 1, desc="full_train"):
-            self.train_loader.sampler.set_epoch(epoch)  # sets epoch for shuffling
+        for epoch in range(1, self.args.epochs + 1):
+            self.train_loader.sampler.set_epoch(epoch)      # sets epoch for shuffling
             self.set_burnin_lr(epoch)
             start = time.perf_counter()
             train_loss = self.train_epoch(self.train_loader, epoch)
@@ -54,14 +54,16 @@ class Runner(object):
                 distortion = self.evaluate(self.valid_loader)
                 if self.is_main_process:
                     self.writer.add_scalar("val/distortion", distortion, epoch)
-                self.log.info(f"RANK {self.args.local_rank}: Results ep {epoch}: tr loss: {train_loss:.1f}, val avg distortion: {distortion * 100:.2f}")
+                self.log.info(f"RANK {self.args.local_rank}: Results ep {epoch}: tr loss: {train_loss:.1f}, "
+                              f"val avg distortion: {distortion * 100:.2f}")
 
                 self.scheduler.step(distortion)
 
                 if distortion < best_distortion:
                     precision = self.calculate_mAP()
                     if self.is_main_process:
-                        self.log.info(f"Best val distortion: {distortion * 100:.3f}, mAP: {precision * 100:.2f} at epoch {epoch}")
+                        self.log.info(f"Best val distortion: {distortion * 100:.3f}, "
+                                      f"mAP: {precision * 100:.2f} at epoch {epoch}")
                     best_distortion = distortion
                     best_epoch = epoch
                     best_model_state = copy.deepcopy(self.ddp_model.state_dict())
@@ -91,8 +93,8 @@ class Runner(object):
         self.ddp_model.zero_grad()
         self.optimizer.zero_grad()
 
-        for step, batch in enumerate(train_split): # enumerate(tqdm(train_split, desc=f"epoch_{epoch_num}")):
-            src_dst_ids, graph_distances = batch     # .to(config.DEVICE)    Dataset is already on DEVICE
+        for step, batch in enumerate(train_split):
+            src_dst_ids, graph_distances = batch
 
             manifold_distances = self.ddp_model(src_dst_ids)
 
@@ -120,8 +122,8 @@ class Runner(object):
     def evaluate(self, eval_split):
         self.ddp_model.eval()
         total_distortion = []
-        for batch in eval_split:        # tqdm(eval_split, desc="Evaluating"):
-            src_dst_ids, graph_distances = batch     # .to(config.DEVICE)
+        for batch in eval_split:
+            src_dst_ids, graph_distances = batch
             with torch.no_grad():
                 manifold_distances = self.ddp_model(src_dst_ids)
                 distortion = self.metric.calculate_metric(graph_distances, manifold_distances)
@@ -182,7 +184,7 @@ class Runner(object):
     def export_results(self, avg_distortion, avg_precision):
         manifold = self.args.model
         dims = self.args.dims
-        if manifold == "upper" or manifold == "bounded":
+        if "upper" in manifold or "bounded" in manifold:
             dims = dims * (dims + 1)
         result_data = {"data": self.args.data, "dims": dims, "manifold": manifold, "run_id": self.args.run_id,
                        "distortion": avg_distortion * 100, "mAP": avg_precision * 100}

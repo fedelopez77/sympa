@@ -17,11 +17,9 @@ def config_parser(parser):
     parser.add_argument("--data", required=True, type=str, help="Name of prep folder")
     parser.add_argument("--run_id", required=True, type=str, help="Name of model/run to export")
     # Model
-    parser.add_argument("--model", default="upper", type=str, help="Model type: 'euclidean', 'poincare', "
+    parser.add_argument("--model", default="bounded-fone", type=str, help="Model type: 'euclidean', 'poincare', "
                                                                        "'upper' or 'bounded'")
     parser.add_argument("--dims", default=3, type=int, help="Dimensions for the model.")
-    parser.add_argument("--metric", default=0, type=int, help="Metric type. Values: 0: Riemannian metric, "
-                                                              "1: Finsler one, 2: Finsler infinity")
     parser.add_argument("--scale_init", default=1, type=float, help="Value to init scale.")
     parser.add_argument("--scale_coef", default=1, type=float, help="Coefficient to divide scale.")
     parser.add_argument("--train_scale", default=0, type=int, help="Whether to train scaling or not.")
