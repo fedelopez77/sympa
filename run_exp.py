@@ -62,12 +62,13 @@ for BS in $${BATCH_SIZES[@]};
                 --model=$$MODEL \\
                 --dims=$$DIMS \\
                 --learning_rate=$$LR \\
-                --val_every=25 \\
+                --val_every=50 \\
                 --patience=50 \\
                 --max_grad_norm=$$MGN \\
                 --batch_size=$$BS \\
                 --epochs=1000 \\
                 --results_file=$$RESULTS_FILE \\
+                --job_id=$$SLURM_JOB_ID \\
                 --seed=$$SEED > /hits/basement/nlp/lopezfo/out/sympa/runs/$${RUN_ID}
         done
     done
@@ -86,11 +87,12 @@ if __name__ == '__main__':
     partition = "cascade"
     nprocs = 10
     models = ["bounded", "upper", "bounded-fone"]
-    dims = [2, 3, 4]
+    dims = [3]
     #preps = ["tree3-5", "grid3d-125", "grid4d-256"]
     #preps = ["prod-cart-treegrid2d", "prod-cart-treetree", "usca312"]
-    preps = ["prod-root-treegrids16-2-4", "prod-root-gridtrees9-2-5", "bio-diseasome"]
-    runs = [1, 2]
+    #preps = ["prod-root-treegrids16-2-4", "prod-root-gridtrees9-2-5", "bio-diseasome"]
+    preps = ["facebook"]
+    runs = [1]
     timestamp = str(datetime.now().strftime("%Y%m%d%H%M%S"))
 
     for i, (model, dim, prep, run) in enumerate(itertools.product(models, dims, preps, runs)):

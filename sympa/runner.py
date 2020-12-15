@@ -60,16 +60,15 @@ class Runner(object):
                 self.scheduler.step(distortion)
 
                 if distortion < best_distortion:
-                    precision = self.calculate_mAP()
+                    # precision = self.calculate_mAP()      # TODO: comment due to facebook experiments
                     if self.is_main_process:
-                        self.log.info(f"Best val distortion: {distortion * 100:.3f}, "
-                                      f"mAP: {precision * 100:.2f} at epoch {epoch}")
+                        self.log.info(f"Best val distortion: {distortion * 100:.3f}, at epoch {epoch}")  # f"mAP: {precision * 100:.2f} ")
                     best_distortion = distortion
                     best_epoch = epoch
                     best_model_state = copy.deepcopy(self.ddp_model.state_dict())
 
                 # early stopping
-                if epoch - best_epoch >= self.args.patience * 3:
+                if epoch - best_epoch >= self.args.patience * 2:    # TODO: restore to * 3 after fb exps
                     self.log.info(f"RANK {self.args.local_rank}: Early stopping at epoch {epoch}!!!")
                     break
 

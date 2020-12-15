@@ -40,6 +40,7 @@ def config_parser(parser):
 
     # Others
     parser.add_argument("--local_rank", type=int, help="Local process rank assigned by torch.distributed.launch")
+    parser.add_argument("--job_id", defalut=-1, type=int, help="Slurm job id to be logged")
     parser.add_argument("--n_procs", default=4, type=int, help="Number of process to create")
     parser.add_argument("--load_model", default="", type=str, help="Load model from this file")
     parser.add_argument("--results_file", default="out/results.csv", type=str, help="Exports final results to this file")
@@ -112,6 +113,7 @@ def main():
     log = get_logging()
     if args.local_rank == 0:
         log.info(args)
+        log.info(f"Job ID: {args.job_id}")
 
     dist.init_process_group(backend=config.BACKEND, init_method='env://') # world_size=args.n_procs, rank=args.local_rank)
 
@@ -123,8 +125,7 @@ def main():
 
     args.num_points = len(id2node)
     model = get_model(args)
-    optimizer = RiemannianSGD(model.parameters(), lr=args.learning_rate, # * args.n_procs,
-                              weight_decay=args.weight_decay, stabilize=10)
+    optimizer = RiemannianSGD(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay, stabilize=10)
     scheduler = get_scheduler(optimizer, args)
 
     if args.local_rank == 0:
