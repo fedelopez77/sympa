@@ -133,6 +133,7 @@ def main():
         n_params = sum([p.nelement() for p in model.parameters() if p.requires_grad])
         log.info(f"Points: {args.num_points}, dims: {args.dims}, number of parameters: {n_params}")
         log.info(model)
+        log.info(f"Triples training: {len(train_loader.dataset)}, valid: {len(valid_loader.dataset)}")
 
     runner = Runner(model, optimizer, scheduler=scheduler, id2node=id2node, args=args,
                     train_loader=train_loader, valid_loader=valid_loader)
