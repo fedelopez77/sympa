@@ -22,7 +22,7 @@ DIMS=$py_dim
 PREP="$py_prep"
 RESULTS_FILE="out/$${MODEL}$${DIMS}d-$${PREP}"
 BATCH_SIZES=(2048 512 128)
-LRS=(1e-2 2e-3)
+LRS=(1e-2 1e-3)
 MAX_GRADS=(10 50 250)
 SEED=$$RANDOM
 
@@ -62,7 +62,7 @@ for BS in $${BATCH_SIZES[@]};
                 --model=$$MODEL \\
                 --dims=$$DIMS \\
                 --learning_rate=$$LR \\
-                --val_every=50 \\
+                --val_every=25 \\
                 --patience=50 \\
                 --max_grad_norm=$$MGN \\
                 --batch_size=$$BS \\
@@ -86,12 +86,12 @@ if __name__ == '__main__':
 
     partition = "cascade"
     nprocs = 10
-    models = ["bounded", "upper", "bounded-fone"]
-    dims = [3]
+    models = ["bounded", "bounded-fone", "bounded-finf", "upper", "upper-fone", "upper-finf"]
+    dims = [2, 3, 4]
     #preps = ["tree3-5", "grid3d-125", "grid4d-256"]
     #preps = ["prod-cart-treegrid2d", "prod-cart-treetree", "usca312"]
     #preps = ["prod-root-treegrids16-2-4", "prod-root-gridtrees9-2-5", "bio-diseasome"]
-    preps = ["facebook"]
+    preps = ["iris", "zoo", "glass"]
     runs = [1]
     timestamp = str(datetime.now().strftime("%Y%m%d%H%M%S"))
 

@@ -68,7 +68,7 @@ class Runner(object):
                     best_model_state = copy.deepcopy(self.ddp_model.state_dict())
 
                 # early stopping
-                if epoch - best_epoch >= self.args.patience * 2:    # TODO: restore to * 3 after fb exps
+                if epoch - best_epoch >= self.args.patience * 3:
                     self.log.info(f"RANK {self.args.local_rank}: Early stopping at epoch {epoch}!!!")
                     break
 
@@ -76,7 +76,7 @@ class Runner(object):
         self.ddp_model.load_state_dict(best_model_state)
 
         distortion = self.evaluate(self.valid_loader)
-        precision = self.calculate_mAP()
+        precision = 0.0     # self.calculate_mAP()
 
         if self.is_main_process:
             self.export_results(distortion, precision)
