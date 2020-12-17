@@ -122,6 +122,10 @@ def build_triples(graph):
                 if (j, i) not in pairs:  # checks that the symmetric triplets is not there
                     pairs.add((i, j))
                     triples.add((i, j, distance_type(distance)))
+                else:
+                    print(f"Symmetric pair already in triples: i={i}, j={j}")
+            else:
+                print(f"Invalid distance to add: i={i}, j={j}, distance={distance}")
     return triples
 
 
