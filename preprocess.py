@@ -79,10 +79,11 @@ def load_graph(args):
     with open(path, "r") as f:
         for line in f:
             line = line.strip().split()
+            ntype = int if line[0].isdigit() else str
             if len(line) == 2 or (len(line) > 2 and not line[2].replace(".", "", 1).isdigit()):
-                graph.add_edge(line[0], line[1])
+                graph.add_edge(ntype(line[0]), ntype(line[1]))
             else:
-                graph.add_edge(line[0], line[1], weight=float(line[2]))
+                graph.add_edge(ntype(line[0]), ntype(line[1]), weight=float(line[2]))
     return graph
 
 
@@ -127,7 +128,7 @@ def build_triples(graph):
 def main():
     parser = argparse.ArgumentParser(description="preprocess.py")
     parser.add_argument("--run_id", required=True, help="Id of run to store data")
-    parser.add_argument("--graph", default="usca312", help="Graph type")
+    parser.add_argument("--graph", default="iris", help="Graph type")
     parser.add_argument("--nodes", default=125, type=int,
                         help="if --graph=grid it will create a grid of dims dimensions with n = int(nodes^(1/dims))")
     parser.add_argument("--grid_dims", default=3, type=int, help="if --graph=grid, number of dimensions")
