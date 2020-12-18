@@ -5,12 +5,13 @@
 import copy
 import time
 import argparse
+import random
 from statistics import mean
 import numpy as np
 import torch
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset, SequentialSampler, RandomSampler
-from sympa.utils import set_seed
+from sympa.utils import set_seed, write_results_to_file
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 if torch.cuda.is_available():
@@ -157,7 +158,7 @@ def train(model, optim, train_loader, valid_loader, args):
                 best_epoch = epoch
                 best_model_state = copy.deepcopy(model.state_dict())
 
-            if epoch - best_epoch >= args.val_every * 4:
+            if epoch - best_epoch >= args.val_every * 5:
                 print(f"Early stopping at epoch {epoch}!!!")
                 break
     print(f"Best model from epoch {best_epoch}")
@@ -165,10 +166,17 @@ def train(model, optim, train_loader, valid_loader, args):
     return model
 
 
+def get_dataset_name(model_name):
+    if "iris" in model_name: return "iris"
+    if "glass" in model_name: return "glass"
+    if "zoo" in model_name: return "zoo"
+    raise ValueError(f"Unrecognized dataset in model name: {model_name}")
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("build_graph_from_dataset.py")
     parser.add_argument("--load_model", required=True, type=str, help="Path of model to load")
-    parser.add_argument("--dataset", default="iris", type=str, help="Name of dataset to load labels")
+    parser.add_argument("--run_id", required=True, type=str, help="Name of run")
 
     # hyperparams
     parser.add_argument("--layers", default=1, type=int, help="Number of layers in the classifier.")
@@ -177,12 +185,14 @@ if __name__ == '__main__':
     parser.add_argument("--batch_size", default=64, type=int, help="Batch size.")
     parser.add_argument("--epochs", default=10, type=int, help="Number of training epochs.")
 
-    #other
-    parser.add_argument("--val_every", default=5, type=int, help="Runs validation every n epochs.")
+    # other
+    parser.add_argument("--results_file", default="out/node/cls-res.csv", type=str, help="Exports final results to this file")
+    parser.add_argument("--val_every", default=25, type=int, help="Runs validation every n epochs.")
     parser.add_argument("--seed", default=42, type=int, help="Seed")
     args = parser.parse_args()
 
     set_seed(42)        # seed is fixed to generate the same splits always.
+    args.dataset = get_dataset_name(args.load_model)
     features = load_data(args.load_model)       # points x dim
     labels = load_labels(args)                  # points x 1
 
@@ -190,8 +200,10 @@ if __name__ == '__main__':
                                          f"Features: {args.dataset}, model: {args.load_model}"
     args.dim = features.shape[-1]
     args.n_classes = len(set(labels.squeeze(-1).tolist()))
+    print(args)
     train_loader, valid_loader, test_loader = create_splits(features, labels, args)
 
+    seed = args.seed if args.seed > 0 else random.randint(1, 1000000)
     set_seed(args.seed)  # seed is set again, so there is variability in different runs
     model = Classifier(args).to(DEVICE)
     optim = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
@@ -204,3 +216,8 @@ if __name__ == '__main__':
     model = train(model, optim, train_loader, valid_loader, args)
     test_acc = evaluate(model, test_loader)
     print(f"Final evaluation accuracy: {test_acc * 100:.3f}")
+    loaded_model = args.load_model.split("/")[-1]
+    write_results_to_file(f"out/node/{loaded_model}", {
+        "accuracy": test_acc, #"lr": args.learning_rate, "mgr": args.max_grad_norm, "bs": args.batch_size,
+        "dims": args.dim, "data": args.dataset, "run_id": args.run_id
+    })
