@@ -35,7 +35,7 @@ def config_parser(parser):
     parser.add_argument("--burnin", default=10, type=int, help="Number of initial epochs to train with reduce lr.")
     parser.add_argument("--grad_accum_steps", default=1, type=int,
                         help="Number of update steps to acum before backward.")
-    parser.add_argument("--scale_triplets", default=1, type=int, help="Whether to apply scaling to triplets or not")
+    parser.add_argument("--scale_triplets", default=-1, type=int, help="Whether to apply scaling to triplets or not")
     parser.add_argument("--subsample", default=-1, type=float, help="Subsamples the % of closest triplets")
 
     # Others
