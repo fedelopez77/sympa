@@ -121,6 +121,9 @@ class Model(nn.Module):
         elif args.model == "upper-finf":
             manifold = UpperHalfManifold(args.dims, metric=Metric.FINSLER_INFINITY.value)
             self.embeddings = ComplexSymmetricMatrixEmbeddings(args.num_points, args.dims, manifold=manifold)
+        elif args.model == "upper-fmin":
+            manifold = UpperHalfManifold(args.dims, metric=Metric.FINSLER_MINIMUM.value)
+            self.embeddings = ComplexSymmetricMatrixEmbeddings(args.num_points, args.dims, manifold=manifold)
         elif args.model == "bounded":
             manifold = BoundedDomainManifold(args.dims, metric=Metric.RIEMANNIAN.value)
             self.embeddings = ComplexSymmetricMatrixEmbeddings(args.num_points, args.dims, manifold=manifold)
@@ -129,6 +132,9 @@ class Model(nn.Module):
             self.embeddings = ComplexSymmetricMatrixEmbeddings(args.num_points, args.dims, manifold=manifold)
         elif args.model == "bounded-finf":
             manifold = BoundedDomainManifold(args.dims, metric=Metric.FINSLER_INFINITY.value)
+            self.embeddings = ComplexSymmetricMatrixEmbeddings(args.num_points, args.dims, manifold=manifold)
+        elif args.model == "bounded-fmin":
+            manifold = BoundedDomainManifold(args.dims, metric=Metric.FINSLER_MINIMUM.value)
             self.embeddings = ComplexSymmetricMatrixEmbeddings(args.num_points, args.dims, manifold=manifold)
         else:
             raise ValueError(f"Unrecognized model option: {args.model}")

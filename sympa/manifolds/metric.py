@@ -7,3 +7,4 @@ class Metric(Enum):
     RIEMANNIAN = 0
     FINSLER_ONE = 1
     FINSLER_INFINITY = 2
+    FINSLER_MINIMUM = 3
