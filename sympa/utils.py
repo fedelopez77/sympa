@@ -78,6 +78,18 @@ def scale_triplets(triplets):
     return triplets
 
 
+def scale_triplets_for_ml_datasets(triplets, factor=5, min_delta=1):
+    """
+    In Machine learning datasets, some nodes are to distance zero (or approx zero) from each other.
+    To prevent this, first we scale the distances by a factor, and then we add a min_delta, to all
+    distances, so the minimum distance between two nodes is min_delta at least.
+
+    :param triplets: iterable with tuples of (src, dst, distance)
+    """
+    triplets = [(src, dst, dist * factor + min_delta) for src, dst, dist in triplets]
+    return triplets
+
+
 def subsample_triplets(triplets, subsample):
     """
     Keeps the proportion established by 'subsample' of the training triplets.

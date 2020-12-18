@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader, TensorDataset, SequentialSampler
 from torch.utils.data.distributed import DistributedSampler
 from geoopt.optim import RiemannianSGD
 from sympa import config
-from sympa.utils import set_seed, get_logging, scale_triplets, subsample_triplets
+from sympa.utils import set_seed, get_logging, scale_triplets, scale_triplets_for_ml_datasets, subsample_triplets
 from sympa.runner import Runner
 from sympa.model import Model
 
@@ -35,7 +35,7 @@ def config_parser(parser):
     parser.add_argument("--burnin", default=10, type=int, help="Number of initial epochs to train with reduce lr.")
     parser.add_argument("--grad_accum_steps", default=1, type=int,
                         help="Number of update steps to acum before backward.")
-    parser.add_argument("--scale_triplets", default=0, type=int, help="Whether to apply scaling to triplets or not")
+    parser.add_argument("--scale_triplets", default=1, type=int, help="Whether to apply scaling to triplets or not")
     parser.add_argument("--subsample", default=-1, type=float, help="Subsamples the % of closest triplets")
 
     # Others
@@ -76,8 +76,8 @@ def load_training_data(args, log):
         sub_triplets = all_triplets
 
     if args.scale_triplets == 1:
-        all_triplets = scale_triplets(all_triplets)
-        sub_triplets = scale_triplets(sub_triplets)
+        all_triplets = scale_triplets_for_ml_datasets(all_triplets)
+        sub_triplets = scale_triplets_for_ml_datasets(sub_triplets)
 
     train_src_dst_ids = torch.LongTensor([(src, dst) for src, dst, _ in sub_triplets]).to(config.DEVICE)
     train_distances = torch.Tensor([distance for _, _, distance in sub_triplets]).to(config.DEVICE)
