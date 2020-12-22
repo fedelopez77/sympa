@@ -10,7 +10,8 @@ CONFIG = {  # first index, file sep
     "iris": (0, ","),
     "zoo": (1, ","),
     "glass": (1, ","),
-    "segment": (0, " ")
+    "segment": (0, " "),
+    "energy": (0, ",")
 }
 
 
@@ -23,8 +24,12 @@ def load_data(dataset_name):
         for line in f:
             line = line.strip().split(sep)
             if len(line) > 1:
-                data.append(list(map(float, line[first_index:-1])))
-                labels.append(line[-1])
+                if dataset_name == "energy":
+                    data.append(list(map(float, line[first_index:-2])))
+                    labels.append(round(float(line[-1])))
+                else:
+                    data.append(list(map(float, line[first_index:-1])))
+                    labels.append(line[-1])
     return np.array(data, dtype=np.float32), labels
 
 

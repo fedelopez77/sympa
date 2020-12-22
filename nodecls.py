@@ -80,7 +80,7 @@ def create_splits(features, labels, args):
     :return: train, valid and test data loaders
     """
     points = len(features)
-    train_size, valid_size, test_size = int(points * 0.7), int(points * 0.15), int(points * 0.15)
+    train_size, valid_size, test_size = int(points * 0.3), int(points * 0.1), int(points * 0.6)
     train_size += 1 if train_size + valid_size + test_size < points else 0
     print(f"Points: {points}. Creating splits of train: {train_size}, valid: {valid_size}, test: {test_size}")
     dataset = TensorDataset(features, labels)
@@ -170,6 +170,8 @@ def get_dataset_name(model_name):
     if "iris" in model_name: return "iris"
     if "glass" in model_name: return "glass"
     if "zoo" in model_name: return "zoo"
+    if "segment" in model_name: return "segment"
+    if "energy" in model_name: return "energy"
     raise ValueError(f"Unrecognized dataset in model name: {model_name}")
 
 
