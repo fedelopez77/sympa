@@ -136,3 +136,4 @@ tensorboard
 out
 job-sympa.sh
 job_script.sh
+recosys/data
