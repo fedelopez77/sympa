@@ -74,7 +74,8 @@ def load_data(args, log):
 
     # splits    # train = data["train"] if not args.debug else data["train"][:100]
     train = TensorDataset(torch.LongTensor(data['train']).to(config.DEVICE))
-    dev = TensorDataset(torch.LongTensor(data['dev']).to(config.DEVICE))
+    dev_data = data['dev'] if len(data['dev']) < 10000 else data['dev'][:10000]
+    dev = TensorDataset(torch.LongTensor(dev_data).to(config.DEVICE))
     test = TensorDataset(torch.LongTensor(data['test']).to(config.DEVICE))
 
     batch_size = args.batch_size // args.n_procs
