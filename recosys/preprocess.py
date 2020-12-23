@@ -129,9 +129,10 @@ if __name__ == '__main__':
     data["id2iid"] = {v: k for k, v in iid2id.items()}
     print(f"Process dataset. Train: {len(data['train'])}, dev: {len(data['dev'])}, test: {len(data['test'])}")
 
-    prep_path = Path("data/prep")
+    prep_path = Path("data/recosys/prep")
     prep_path.mkdir(parents=True, exist_ok=True)
     to_save_dir = prep_path / args.run_id
     to_save_dir.mkdir(parents=True, exist_ok=True)
+    print(f"Saving in {to_save_dir}")
     save_as_pickle(to_save_dir / f'{args.run_id}.pickle', data)
     print("Done!")
