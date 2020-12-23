@@ -55,7 +55,7 @@ for BS in $${BATCH_SIZES[@]};
         do
             MYPORT=`shuf -i 2049-48000 -n 1`
             RUN_ID=r$$MODEL$$DIMS-$$PREP-lr$$LR-mgr$$MGN-bs$$BS-$$RUN
-            python -m torch.distributed.launch --nproc_per_node=${py_nproc} --master_port=$$MYPORT train.py \\
+            python -m torch.distributed.launch --nproc_per_node=${py_nproc} --master_port=$$MYPORT recosys/train.py \\
                 --n_procs=${py_nproc} \\
                 --prep=$$PREP \\
                 --run_id=$$RUN_ID \\

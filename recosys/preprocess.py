@@ -1,4 +1,7 @@
-
+import os
+import sys
+sys.path.append(os.path.abspath('../sympa'))
+sys.path.append(os.path.abspath('.'))
 import pickle
 import numpy as np
 import random
@@ -91,9 +94,9 @@ def save_as_pickle(save_path, data):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="recosys-preprocess.py")
-    parser.add_argument('--run_id', default='ml-1m', type=str, help='Name of prep to store')
-    parser.add_argument('--item', default='ml-1m', type=str, help='Item to process: "keen", "gem", "ml-1m" or "amazon"')
-    parser.add_argument('--dataset_path', default='data/ml-1m', type=str, help='Path to raw dataset')
+    parser.add_argument('--run_id', default='software', type=str, help='Name of prep to store')
+    parser.add_argument('--item', default='amazon', type=str, help='Item to process: "keen", "gem", "ml-1m" or "amazon"')
+    parser.add_argument('--dataset_path', default='data/recosys/amazon', type=str, help='Path to raw dataset')
     parser.add_argument('--amazon_reviews', default='Software_5.json.gz', type=str,
                         help='Name of the 5-core amazon reviews file')
     parser.add_argument('--plot_graph', default=0, type=int, help='Plots the user-item graph')

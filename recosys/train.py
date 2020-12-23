@@ -1,7 +1,7 @@
 import os
 import sys
 sys.path.append(os.path.abspath('../sympa'))
-
+sys.path.append(os.path.abspath('.'))
 import argparse
 import random
 import pickle
