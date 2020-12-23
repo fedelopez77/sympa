@@ -31,20 +31,24 @@ class RankingBuilder:
         :param n_random_items: number of random items to sample
         :return: ranks_random: Numpy array of shape (n_examples, ) containing the rank of each
                 example in random setting (ranking against randomly selected random_items items).
+                Best ranking: 1 (ranking is 1-numerated)
         """
-        random_scores = np.ones((len(eval_batch), n_random_items)) * -1
-        for i, (user_id, _) in enumerate(eval_batch):
+        inputs = []
+        for user_id, _ in eval_batch:
             interacted = set(self.samples[user_id.item()])
             candidates = list(self.candidate_ids - interacted)
-            set_seed(self.seed)
+            np.random.seed(self.seed)
             random_ids = np.random.choice(candidates, n_random_items, replace=False)
 
-            input_tensor = self.build_input_tensor(user_id, random_ids)
-            scores = model(input_tensor)
-            random_scores[i] = scores.numpy()
+            input_tensor = self.build_input_tensor(user_id, random_ids)     # n x 2
+            inputs.append(input_tensor)
 
-        target_scores = model(eval_batch).numpy()
-        ranking = np.sum((random_scores >= target_scores), axis=1)
+        input_tensor = torch.cat(inputs, dim=0)     # b * n x 2
+        scores = model(input_tensor)                # b * n
+        random_scores = scores.reshape(-1, n_random_items).numpy()
+
+        target_scores = torch.unsqueeze(model(eval_batch), 1).numpy()
+        ranking = np.sum((random_scores >= target_scores), axis=1) + 1
         return ranking
 
     def build_input_tensor(self, user_id, random_ids):

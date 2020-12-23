@@ -33,7 +33,7 @@ class Runner(object):
         self.log = get_logging()
         self.is_main_process = args.local_rank == 0
         if self.is_main_process:
-            self.writer = SummaryWriter(config.TENSORBOARD_PATH / args.run_id)
+            self.writer = SummaryWriter(str(config.TENSORBOARD_PATH / args.run_id))
 
     def run(self):
         best_hitrate, best_epoch = -1, -1
@@ -62,13 +62,13 @@ class Runner(object):
                     self.writer.add_scalar("val/HR@10", hitrate, epoch)
                     self.writer.add_scalar("val/nDCG", ndcg, epoch)
                 self.log.info(f"RANK {self.args.local_rank}: Results ep {epoch}: tr loss: {train_loss:.1f}, "
-                              f"dev HR@10: {hitrate * 100:.2f}")
+                              f"dev HR@10: {hitrate:.2f}, nDCG: {ndcg:.3f}")
 
                 self.scheduler.step(hitrate)
 
                 if hitrate > best_hitrate:
                     if self.is_main_process:
-                        self.log.info(f"Best dev HR@10: {hitrate * 100:.3f}, at epoch {epoch}")
+                        self.log.info(f"Best dev HR@10: {hitrate:.3f}, at epoch {epoch}")
                     best_hitrate = hitrate
                     best_epoch = epoch
                     best_model_state = copy.deepcopy(self.ddp_model.state_dict())
@@ -85,7 +85,7 @@ class Runner(object):
 
         if self.is_main_process:
             self.export_results(hitrate, ndcg)
-            self.log.info(f"Final Results: HR@10: {hitrate * 100:.2f}, nDCG: {ndcg:.3f}")
+            self.log.info(f"Final Results: HR@10: {hitrate:.2f}, nDCG: {ndcg:.3f}")
             self.save_model(best_epoch)
             self.writer.close()
 
@@ -99,7 +99,7 @@ class Runner(object):
 
         for step, batch in enumerate(train_split):
 
-            loss = self.loss.calculate_loss(self.ddp_model, batch)
+            loss = self.loss.calculate_loss(self.ddp_model, batch[0])
             loss = loss / self.args.grad_accum_steps
             loss.backward()
 
@@ -125,7 +125,7 @@ class Runner(object):
         ranking = []
         for batch in eval_split:
             with torch.no_grad():
-                partial_ranking = self.ranking_builder.rank(self.ddp_model, batch)
+                partial_ranking = self.ranking_builder.rank(self.ddp_model, batch[0])
                 ranking.append(partial_ranking)
 
         ranking = np.concatenate(ranking, axis=0)
@@ -163,11 +163,11 @@ class Runner(object):
         if not all_points_ok:
             raise AssertionError(f"Point outside manifold. Reason: {reason}\n{outside_point}")
 
-    def export_results(self, avg_distortion, avg_precision):
+    def export_results(self, hr_at_k, ndcg_at_k):
         manifold = self.args.model
         dims = self.args.dims
         if "upper" in manifold or "bounded" in manifold:
             dims = dims * (dims + 1)
-        result_data = {"data": self.args.data, "dims": dims, "manifold": manifold, "run_id": self.args.run_id,
-                       "distortion": avg_distortion * 100, "mAP": avg_precision * 100}
+        result_data = {"data": self.args.prep, "dims": dims, "manifold": manifold, "run_id": self.args.run_id,
+                       "HR@10": hr_at_k, "nDCG@10": ndcg_at_k}
         write_results_to_file(self.args.results_file, result_data)

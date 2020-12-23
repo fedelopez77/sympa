@@ -1,3 +1,6 @@
+import os
+import sys
+sys.path.append(os.path.abspath('../sympa'))
 
 import argparse
 import random
@@ -19,7 +22,7 @@ def config_parser(parser):
     parser.add_argument("--prep", required=True, type=str, help="Name of prep folder and file")
     parser.add_argument("--run_id", required=True, type=str, help="Name of model/run to export")
     # Model
-    parser.add_argument("--model", default="bounded-fone", type=str, help="Model type: 'euclidean', 'poincare', "
+    parser.add_argument("--model", default="upper-fone", type=str, help="Model type: 'euclidean', 'poincare', "
                                                                        "'upper' or 'bounded'")
     parser.add_argument("--loss", default="bce", type=str, help="Loss: bce or hinge")
     parser.add_argument("--dims", default=3, type=int, help="Dimensions for the model.")
@@ -32,6 +35,7 @@ def config_parser(parser):
     parser.add_argument("--patience", default=25, type=int, help="Epochs of patience for scheduler and early stop.")
     parser.add_argument("--max_grad_norm", default=50.0, type=float, help="Max gradient norm.")
     parser.add_argument("--batch_size", default=1000, type=int, help="Batch size.")
+    parser.add_argument("--eval_batch_size", default=100, type=int, help="Batch size.")
     parser.add_argument("--epochs", default=100, type=int, help="Number of training epochs.")
     parser.add_argument("--burnin", default=10, type=int, help="Number of initial epochs to train with reduce lr.")
     parser.add_argument("--grad_accum_steps", default=1, type=int, help="Number of steps to acum before backward.")
@@ -42,7 +46,7 @@ def config_parser(parser):
     parser.add_argument("--job_id", default=-1, type=int, help="Slurm job id to be logged")
     parser.add_argument("--n_procs", default=4, type=int, help="Number of process to create")
     parser.add_argument("--load_model", default="", type=str, help="Load model from this file")
-    parser.add_argument("--results_file", default="out/results.csv", type=str, help="Exports final results to this file")
+    parser.add_argument("--results_file", default="out/recosys/results.csv", type=str, help="Exports final results to this file")
     parser.add_argument("--save_epochs", default=10001, type=int, help="Exports every n epochs")
     parser.add_argument("--seed", default=42, type=int, help="Seed")
 
@@ -64,7 +68,7 @@ def get_scheduler(optimizer, args):
 
 
 def load_data(args, log):
-    data_path = f"data/prep/{args.prep}/{args.prep}.pickle"
+    data_path = config.PREP_PATH / f"recosys/prep/{args.prep}/{args.prep}.pickle"
     log.info(f"Loading data from {data_path}")
     data = pickle.load(open(str(data_path), "rb"))
 
@@ -79,8 +83,8 @@ def load_data(args, log):
     train_loader = DataLoader(dataset=train, batch_size=batch_size, shuffle=False, num_workers=0,
                               pin_memory=True, sampler=train_sampler)
 
-    dev_loader = DataLoader(dev, sampler=SequentialSampler(dev), batch_size=args.batch_size)
-    test_loader = DataLoader(test, sampler=SequentialSampler(test), batch_size=args.batch_size)
+    dev_loader = DataLoader(dev, sampler=SequentialSampler(dev), batch_size=args.eval_batch_size)
+    test_loader = DataLoader(test, sampler=SequentialSampler(test), batch_size=args.eval_batch_size)
 
     return train_loader, dev_loader, test_loader, data["samples"], data
 

@@ -38,8 +38,11 @@ class NegativeSampleLoss(LossFunction, abc.ABC):
         """From a batch x 2 input_batch tensor with (head, tail) builds a
         batch x 2 input batch of the form (head, corrupted_tail)"""
         head = torch.unsqueeze(input_batch[:, 0], 1)            # b x 1
-        corrupted_tail = torch.randint(low=self.ini_neg_index, high=self.end_neg_index + 1,
-                                       size=(len(input_batch), 1), device=input_batch.device)
+        corrupted_tail = torch.randint(low=self.ini_neg_index, high=self.end_neg_index,
+                                       size=(len(input_batch) * self.neg_sample_size, 1),
+                                       device=input_batch.device)
+        noisy_tail = torch.remainder(corrupted_tail + 1, self.end_neg_index).long()
+        corrupted_tail = torch.where(head == corrupted_tail, noisy_tail, corrupted_tail)
         return torch.cat((head, corrupted_tail), dim=-1)
 
 
@@ -62,7 +65,7 @@ class BCELoss(NegativeSampleLoss):
         total_labels = torch.cat((true_labels, neg_labels), dim=0)
 
         scores = model(total_input_batch)
-        loss = self.bce_from_logits(scores, total_labels)
+        loss = self.bce_from_logits(torch.unsqueeze(scores, 1), total_labels)
         return loss
 
 
