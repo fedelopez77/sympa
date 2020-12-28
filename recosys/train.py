@@ -40,6 +40,7 @@ def config_parser(parser):
     parser.add_argument("--burnin", default=10, type=int, help="Number of initial epochs to train with reduce lr.")
     parser.add_argument("--grad_accum_steps", default=1, type=int, help="Number of steps to acum before backward.")
     parser.add_argument("--neg_sample_size", default=1, type=int, help="Neg sample to use in loss.")
+    parser.add_argument("--hinge_margin", default=1, type=float, help="Margin for hinge loss.")
 
     # Others
     parser.add_argument("--local_rank", type=int, help="Local process rank assigned by torch.distributed.launch")
