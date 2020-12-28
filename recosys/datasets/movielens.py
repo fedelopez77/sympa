@@ -1,22 +1,27 @@
 """File with movie lens dataset specific functions"""
 
-from pathlib import Path
-
 
 def movielens_to_dict(dataset_path):
     """
     Maps raw dataset file to a Dictonary.
 
-    :param dataset_path: Path to file containing interactions in a format
-        uid::iid::rate::time.
-    :return: Dictionary containing users as keys, and a numpy array of items the user
+    :param dataset_path: Path to folder containing interaction file.
+        Expected file and formats are:
+        ml-1m: file: 'ratings.dat', format: uid::iid::rate::time
+        ml-100k: file: 'u.data', format: uid \t iid \t rate \t time -> tsv
+
+    :return: Dictionary containing users as keys, and a list of items the user
       interacted with, sorted by the time of interaction.
     """
     filename = "ratings.dat"
+    sep = "::"
+    if "100k" in str(dataset_path):
+        filename = "u.data"
+        sep = "\t"
     samples = {}
-    with open(str(dataset_path / filename), 'r') as f:
+    with open(dataset_path / filename, 'r') as f:
         for line in f:
-            line = line.strip('\n').split('::')
+            line = line.strip('\n').split(sep)
             uid = line[0]
             iid = line[1]
             timestamp = int(line[3])
