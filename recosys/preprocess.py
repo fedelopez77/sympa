@@ -8,7 +8,7 @@ import random
 from pathlib import Path
 import argparse
 from sympa.utils import set_seed
-from recosys.datasets import amazon, movielens, lastfm
+from recosys.datasets import amazon, movielens, lastfm, mindreader, meetup
 
 
 def plot_graph(samples):
@@ -95,8 +95,8 @@ def save_as_pickle(save_path, data):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="recosys-preprocess.py")
     parser.add_argument('--run_id', default='software', type=str, help='Name of prep to store')
-    parser.add_argument('--item', default='lastfm', type=str, help='Item to process: "movies", "lastfm" or "amazon"')
-    parser.add_argument('--dataset_path', default='data/recosys/lastfm', type=str, help='Path to raw dataset')
+    parser.add_argument('--item', default='meetup', type=str, help='Item to process')
+    parser.add_argument('--dataset_path', default='data/recosys/meetup/CA', type=str, help='Path to raw dataset')
     parser.add_argument('--amazon_reviews', default='Software_5.json.gz', type=str,
                         help='Name of the 5-core amazon reviews file')
     parser.add_argument('--plot_graph', default=0, type=int, help='Plots the user-item graph')
@@ -113,6 +113,10 @@ if __name__ == '__main__':
         samples = movielens.movielens_to_dict(dataset_path)
     elif args.item == "lastfm":
         samples = lastfm.load_interactions(dataset_path)
+    elif args.item == "mindreader":
+        samples = mindreader.load_interactions(dataset_path)
+    elif args.item == "meetup":
+        samples = meetup.load_interactions(dataset_path)
     else:
         raise ValueError(f"Unknown item: {args.item}")
 
@@ -130,7 +134,7 @@ if __name__ == '__main__':
     data["id2uid"] = {v: k for k, v in uid2id.items()}
     data["id2iid"] = {v: k for k, v in iid2id.items()}
     total = len(data['train']) + len(data['dev']) + len(data['test'])
-    print(f"Users: {len(uid2id)}, items: {len(iid2id)}, total intereactions: {total}")
+    print(f"Users: {len(uid2id)}, items: {len(iid2id)}, total interactions: {total}")
     print(f"Density: {total / (len(uid2id) * len(iid2id)) * 100:.2f}%")
     print(f"Process dataset. Train: {len(data['train'])}, dev: {len(data['dev'])}, test: {len(data['test'])}")
 
