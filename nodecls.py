@@ -81,7 +81,8 @@ def create_splits(features, labels, args):
     """
     points = len(features)
     train_size, valid_size, test_size = int(points * 0.3), int(points * 0.1), int(points * 0.6)
-    train_size += 1 if train_size + valid_size + test_size < points else 0
+    while train_size + valid_size + test_size < points:
+        train_size += 1
     print(f"Points: {points}. Creating splits of train: {train_size}, valid: {valid_size}, test: {test_size}")
     dataset = TensorDataset(features, labels)
     train_dset, valid_dset, test_dset = torch.utils.data.random_split(dataset, [train_size, valid_size, test_size])
