@@ -11,7 +11,9 @@ import numpy as np
 import torch
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset, SequentialSampler, RandomSampler
+import geoopt as gt
 from sympa.utils import set_seed, write_results_to_file
+from sympa.math import symmetric_math as sm
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 if torch.cuda.is_available():
@@ -55,10 +57,44 @@ def load_data(path_to_saved_model):
     if "bounded" in path_to_saved_model or "upper" in path_to_saved_model:
         real, imag = features[:, 0], features[:, 1]         # b x n x n
         n = real.shape[-1]
+        # Old way: concat of real and imaginary coordinates
+        # row, col = torch.triu_indices(n, n)
+        # real_feat = real[:, row, col]
+        # imag_feat = imag[:, row, col]
+        # features = torch.cat((real_feat, imag_feat), dim=-1)
+
+        # new way: To map the Hermitian matrix Z = X + iY to the Euclidean plan
+        # 1 - Map it to a SPD matrix: S = (X + Y) / 2
+        # 2 - Apply the log of the matrix: log(S) = V ln(D) V^-1
+        # 3 - Extract a vector from log(S)
+        spd = (real + imag) / 2                         # b x n x n
+        log_mat = sm.matrix_log(spd)
         row, col = torch.triu_indices(n, n)
-        real_feat = real[:, row, col]
-        imag_feat = imag[:, row, col]
-        features = torch.cat((real_feat, imag_feat), dim=-1)
+        features = log_mat[:, row, col]
+    else:
+        dims = features.shape[-1]
+        if "euclidean" in path_to_saved_model:
+            manifold = gt.Euclidean(1)
+        elif "poincare" in path_to_saved_model:
+            manifold = gt.PoincareBall()
+        elif "lorentz" in path_to_saved_model:
+            manifold = gt.Lorentz()
+        elif "sphere" in path_to_saved_model:
+            manifold = gt.Sphere()
+        elif "prod-hysph" in path_to_saved_model:
+            poincare = gt.PoincareBall()
+            sphere = gt.Sphere()
+            manifold = gt.ProductManifold((poincare, dims // 2), (sphere, dims // 2))
+        elif "prod-hyhy" in path_to_saved_model:
+            poincare = gt.PoincareBall()
+            manifold = gt.ProductManifold((poincare, dims // 2), (poincare, dims // 2))
+        elif "prod-hyeu" in path_to_saved_model:
+            poincare = gt.PoincareBall()
+            euclidean = gt.Euclidean(1)
+            manifold = gt.ProductManifold((poincare, dims // 2), (euclidean, dims // 2))
+        else:
+            raise ValueError(f"Unrecognized manifold in path: {path_to_saved_model}")
+        features = manifold.logmap(torch.zeros_like(features), features)
     return features.to(DEVICE)
 
 

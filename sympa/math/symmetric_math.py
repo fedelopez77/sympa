@@ -386,3 +386,17 @@ def matrix_sqrt(y: torch.Tensor):
     eigvalues, eigvectors = symeig(y)
     d_sq = torch.diag_embed(torch.sqrt(eigvalues))
     return eigvectors.bmm(d_sq).bmm(eigvectors.inverse())
+
+
+def matrix_log(y: torch.Tensor):
+    """
+    For a real symmetric matrix Y, the log by diagonalization is:
+    1) Y = SDS^-1
+    2) D_log = log(D) -> the log of each entry in D
+    3) Y_log = S D_log S^-1
+    :param y: b x * x n x n. PRE: Each matrix must be symmetric
+    :return: sqrt(y): b x * x n x n
+    """
+    eigvalues, eigvectors = symeig(y)
+    d_log = torch.diag_embed(torch.log(eigvalues))
+    return eigvectors.bmm(d_log).bmm(eigvectors.inverse())
