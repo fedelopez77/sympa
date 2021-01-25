@@ -14,6 +14,7 @@ from torch.utils.data import DataLoader, TensorDataset, SequentialSampler, Rando
 import geoopt as gt
 from sympa.utils import set_seed, write_results_to_file
 from sympa.math import symmetric_math as sm
+from sympa.math.caley_transform import inverse_caley_transform
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 if torch.cuda.is_available():
@@ -55,8 +56,7 @@ def load_data(path_to_saved_model):
     model = torch.load(path_to_saved_model)
     features = model["model"]["module.embeddings.embeds"]   # points x dim or points x 2 x n x n
     if "bounded" in path_to_saved_model or "upper" in path_to_saved_model:
-        real, imag = features[:, 0], features[:, 1]         # b x n x n
-        n = real.shape[-1]
+        n = features.shape[-1]
         # Old way: concat of real and imaginary coordinates
         # row, col = torch.triu_indices(n, n)
         # real_feat = real[:, row, col]
@@ -67,7 +67,18 @@ def load_data(path_to_saved_model):
         # 1 - Map it to a SPD matrix: S = (X + Y) / 2
         # 2 - Apply the log of the matrix: log(S) = V ln(D) V^-1
         # 3 - Extract a vector from log(S)
-        spd = (real + imag) / 2                         # b x n x n
+        #
+        # else:   # upper model: only the imaginary part has to be Positive definite
+        #     spd = features[:, 1]  # b x n x n   this is the imaginary part only
+        if "bounded" in path_to_saved_model:
+            features = inverse_caley_transform(features)
+
+        # Complex symmetric to SPD: X+iY \to \sqrt{Y+XY^{-1}X }
+        real, imag = sm.real(features), sm.imag(features)
+        spd = imag + real.bmm(torch.inverse(imag)).bmm(real)
+        spd = sm.matrix_sqrt(spd)
+        # spd = imag
+
         log_mat = sm.matrix_log(spd)
         row, col = torch.triu_indices(n, n)
         features = log_mat[:, row, col]
@@ -226,7 +237,7 @@ if __name__ == '__main__':
 
     # other
     parser.add_argument("--results_file", default="out/node/cls-res.csv", type=str, help="Exports final results to this file")
-    parser.add_argument("--val_every", default=25, type=int, help="Runs validation every n epochs.")
+    parser.add_argument("--val_every", default=5, type=int, help="Runs validation every n epochs.")
     parser.add_argument("--seed", default=42, type=int, help="Seed")
     args = parser.parse_args()
 
