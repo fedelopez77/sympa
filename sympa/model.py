@@ -26,8 +26,8 @@ class Model(nn.Module):
         src_embeds = self.embeddings(src_index)                       # b x 2 x n x n or b x n
         dst_embeds = self.embeddings(dst_index)                       # b x 2 x n x n
 
-        distances = self.distance(src_embeds, dst_embeds)
-        return distances * self.get_scale()
+        distances, diagonal = self.distance(src_embeds, dst_embeds)
+        return distances * self.get_scale(), diagonal
 
     def distance(self, src_embeds, dst_embeds):
         """

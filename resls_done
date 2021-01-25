@@ -1,0 +1,17 @@
+ckpt/rupper2-prod-cart-treetree-finsler-lr1e-2-mgr10-bs128-2-best-1000ep
+ckpt/rupper2-prod-cart-treetree-fininf-lr1e-2-mgr250-bs512-1-best-1000ep
+ckpt/rbounded2-prod-cart-treetree-fininf-lr1e-2-mgr10-bs128-1-best-1000ep
+ckpt/rbounded2-prod-cart-treetree-finsler-lr1e-2-mgr10-bs128-1-best-1000ep
+ckpt/rupper2-grid4d-256-fininfinity-lr1e-2-mgr250-bs512-1-best-950ep
+ckpt/rupper2-grid4d-256-lr1e-2-mgr50-bs512-1-best-800ep
+ckpt/rupper2-grid4d-256-finsler-lr1e-2-mgr10-bs2048-1-best-1000ep
+ckpt/rbounded2-prod-root-gridtrees9-2-5-finsler-lr2e-3-mgr50-bs2048-1-best-1000ep
+ckpt/rupper2-prod-root-gridtrees9-2-5-finsler-lr1e-2-mgr250-bs2048-2-best-1000ep
+ckpt/rupper2-prod-root-gridtrees9-2-5-fininf-lr1e-2-mgr250-bs2048-1-best-975ep
+ckpt/rbounded2-prod-root-treegrids16-2-4-finsler-lr1e-2-mgr10-bs512-1-best-1000ep
+ckpt/rbounded2-prod-root-treegrids16-2-4-fininf-lr1e-2-mgr10-bs512-1-best-1000ep
+ckpt/rupper2-prod-root-treegrids16-2-4-fininf-lr1e-2-mgr250-bs512-2-best-900ep
+ckpt/rupper2-prod-root-treegrids16-2-4-finsler-lr1e-2-mgr250-bs512-1-best-900ep
+ckpt/rupper2-tree3-5-lr1e-2-mgr250-bs2048-2-best-1275ep
+ckpt/rupper2-tree3-5-finsler-lr1e-2-mgr50-bs2048-2-best-1475ep
+ckpt/rupper2-tree3-5-fininfinity-lr1e-2-mgr250-bs512-1-best-1000ep

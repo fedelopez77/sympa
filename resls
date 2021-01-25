@@ -1,0 +1,14 @@
+ckpt/rbounded2-bio-diseasome-finsler-lr2e-3-mgr50-bs2048-1-best-1000ep
+ckpt/rbounded2-bio-diseasome-fininf-lr1e-2-mgr10-bs512-2-best-1000ep
+ckpt/rupper2-bio-diseasome-fininf-lr1e-2-mgr250-bs512-2-best-700ep
+ckpt/rupper2-bio-diseasome-finsler-lr1e-2-mgr50-bs512-2-best-1000ep
+ckpt/rupper2-csphd-lr6e-2-mgr50-bs2048-1-best-1000ep
+ckpt/rupper-finf2-csphd-lr1e-2-mgr50-bs512-3-best-1000ep
+ckpt/rupper-fone2-csphd-lr3e-2-mgr50-bs512-1-best-875ep
+ckpt/rupper2-road-euroroad-lr6e-2-mgr10-bs2048-1-best-1000ep
+ckpt/rupper-finf2-road-euroroad-lr1e-2-mgr50-bs512-1-best-1000ep
+ckpt/rupper-fone2-road-euroroad-lr3e-2-mgr50-bs512-1-best-900ep
+ckpt/rbounded2-usca312-finsler-lr1e-2-mgr10-bs512-2-best-1000ep
+ckpt/rbounded2-usca312-fininf-lr1e-2-mgr10-bs512-1-best-1000ep
+ckpt/rupper2-usca312-finsler-lr2e-3-mgr50-bs512-1-best-1000ep
+ckpt/rupper2-usca312-fininf-lr2e-3-mgr10-bs128-1-best-950ep

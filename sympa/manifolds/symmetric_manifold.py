@@ -92,7 +92,7 @@ class SymmetricManifold(Manifold, ABC):
         else:
             raise ValueError(f"Unrecognized metric: {metric}")
 
-    def dist(self, z1: torch.Tensor, z2: torch.Tensor, *, keepdim=False) -> torch.Tensor:
+    def dist(self, z1: torch.Tensor, z2: torch.Tensor, *, keepdim=False):
         """
         This methods calculates the distance for the Upper Half Space Manifold (UHSM)
         It is implemented here since the way to calculate distances in the Bounded Domain Manifold requires mapping
@@ -120,9 +120,9 @@ class SymmetricManifold(Manifold, ABC):
 
         # di = (1 + ri) / (1 - ri) # TODO: see if clamping only denom or whole result in case values are too large
         d = (1 + eigvalues) / (1 - eigvalues).clamp(min=eps)
-        d = torch.log(d)
-        res = self.compute_metric(d)
-        return res
+        log_d = torch.log(d)
+        res = self.compute_metric(log_d)
+        return res, log_d
 
     def retr(self, x: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
         """
