@@ -46,7 +46,7 @@ def plot3d(xs, ys, zs, title):
     points = ax.scatter(xs, ys, c=zs, s=10, cmap=cmap)
     plt.axis('equal')
     f.colorbar(points)
-    plt.title(title)
+    # plt.title(title)
     # plt.show()
     plt.savefig("plots/edges/" + title + ".png")
 
@@ -93,7 +93,6 @@ def main():
     if "bounded" in args.load_model and "fone" in args.load_model: args.model = "bounded-fone"
     if "upper" in args.load_model and "finf" in args.load_model: args.model = "upper-finf"
     if "bounded" in args.load_model and "finf" in args.load_model: args.model = "bounded-fone"
-
 
     log = get_logging()
     if args.local_rank == 0:
