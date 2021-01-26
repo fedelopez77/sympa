@@ -127,7 +127,7 @@ class BoundedDomainManifold(SymmetricManifold):
         The exact implementation depends on manifold and usually does not follow all
         assumptions about uniform measure, etc.
         """
-        points = UpperHalfManifold(ndim=self.ndim).random(size[0], **kwargs)
+        points = UpperHalfManifold(ndim=self.ndim).random(size, **kwargs)
         return caley_transform(points)
 
 
