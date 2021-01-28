@@ -3,8 +3,8 @@ import torch.nn as nn
 from sympa.utils import get_logging
 import geoopt as gt
 from sympa.manifolds.metric import Metric
-from sympa.manifolds import BoundedDomainManifold, UpperHalfManifold
-from sympa.model import VectorEmbeddings, ComplexSymmetricMatrixEmbeddings
+from sympa.manifolds import BoundedDomainManifold, UpperHalfManifold, SymmetricPositiveDefinite
+from sympa.embeddings import VectorEmbeddings, ComplexSymmetricMatrixEmbeddings
 
 log = get_logging()
 
@@ -58,6 +58,9 @@ class RecoSys(nn.Module):
             self.embeddings = ComplexSymmetricMatrixEmbeddings(args.num_points, args.dims, manifold=manifold)
         elif args.model == "bounded-fmin":
             manifold = BoundedDomainManifold(args.dims, metric=Metric.FINSLER_MINIMUM.value)
+            self.embeddings = ComplexSymmetricMatrixEmbeddings(args.num_points, args.dims, manifold=manifold)
+        elif args.model == "spd":
+            manifold = SymmetricPositiveDefinite()
             self.embeddings = ComplexSymmetricMatrixEmbeddings(args.num_points, args.dims, manifold=manifold)
         else:
             raise ValueError(f"Unrecognized model option: {args.model}")

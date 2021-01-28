@@ -22,7 +22,7 @@ def config_parser(parser):
     parser.add_argument("--prep", required=True, type=str, help="Name of prep folder and file")
     parser.add_argument("--run_id", required=True, type=str, help="Name of model/run to export")
     # Model
-    parser.add_argument("--model", default="upper-fone", type=str, help="Model type: 'euclidean', 'poincare', "
+    parser.add_argument("--model", default="spd", type=str, help="Model type: 'euclidean', 'poincare', "
                                                                        "'upper' or 'bounded'")
     parser.add_argument("--loss", default="bce", type=str, help="Loss: bce or hinge")
     parser.add_argument("--dims", default=3, type=int, help="Dimensions for the model.")
