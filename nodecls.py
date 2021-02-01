@@ -73,15 +73,33 @@ def load_data(path_to_saved_model):
         if "bounded" in path_to_saved_model:
             features = inverse_caley_transform(features)
 
-        # Complex symmetric to SPD: X+iY \to \sqrt{Y+XY^{-1}X }
-        real, imag = sm.real(features), sm.imag(features)
-        spd = imag + real.bmm(torch.inverse(imag)).bmm(real)
-        spd = sm.matrix_sqrt(spd)
-        # spd = imag
+        # TAKE 2: Complex symmetric to SPD: X+iY \to \sqrt{Y+XY^{-1}X }
+        # real, imag = sm.real(features), sm.imag(features)
+        # spd = imag + real.bmm(torch.inverse(imag)).bmm(real)
+        # spd = sm.matrix_sqrt(spd)
+        # # spd = imag
 
-        log_mat = sm.matrix_log(spd)
+        # TAKE 3: from Z = X + iY, build SPD = ((Y+XY^{-1}X, XY^{-1}),(Y^{-1}X, Y^{-1}))
+        x, y = sm.real(features), sm.imag(features)
+        inv_y = torch.inverse(y)
+
+        y_plus_xinvyx = y + x.bmm(inv_y).bmm(x)
+        xinvy = x.bmm(inv_y)
+        invyx = inv_y.bmm(x)
+
+        top_row = torch.cat((y_plus_xinvyx, xinvy), dim=-1)
+        bot_row = torch.cat((invyx, inv_y), dim=-1)
+        spd = torch.cat((top_row, bot_row), dim=-2)     # b x 2n x 2n
+
+        log_mat = sm.matrix_log(spd)                    # b x 2n x 2n
+        # log_mat = [(U, V), (V, -U)], so then the upper triangular of U,V are the features
+        u = log_mat[:, 0:n, 0:n]                 # b x n x n
+        v = log_mat[:, 0:n, n:2*n]               # b x n x n
+
         row, col = torch.triu_indices(n, n)
-        features = log_mat[:, row, col]
+        u_feat = u[:, row, col]               # b x n * (n+1) / 2
+        v_feat = v[:, row, col]               # b x n * (n+1) / 2
+        features = torch.cat((u_feat, v_feat), -1)    # b x n * (n+1)
     else:
         dims = features.shape[-1]
         if "euclidean" in path_to_saved_model:
