@@ -100,7 +100,7 @@ def load_data(path_to_saved_model):
         u_feat = u[:, row, col]               # b x n * (n+1) / 2
         v_feat = v[:, row, col]               # b x n * (n+1) / 2
         features = torch.cat((u_feat, v_feat), -1)    # b x n * (n+1)
-    if "spd" in path_to_saved_model:
+    elif "spd" in path_to_saved_model:
         n = features.shape[-1]
         log_mat = sm.matrix_log(features)           # b x n x n
         row, col = torch.triu_indices(n, n)
