@@ -90,7 +90,7 @@ def plot_graph(graph, path):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    pos = nx.kamada_kawai_layout(graph) # spring_layout(graph, iterations=100)
+    pos = nx.spring_layout(graph, iterations=100) # kamada_kawai_layout(graph)
     fig = plt.figure()
     nx.draw(graph, pos, ax=fig.add_subplot(111), node_size=5, with_labels=True, label=graph.name)
     plt.savefig(path / (graph.name + ".png"))
@@ -127,8 +127,8 @@ def build_triples(graph):
 def main():
     parser = argparse.ArgumentParser(description="preprocess.py")
     parser.add_argument("--run_id", required=True, help="Id of run to store data")
-    parser.add_argument("--graph", default="product-rooted", help="Graph type")
-    parser.add_argument("--nodes", default=9, type=int,
+    parser.add_argument("--graph", default="grid", help="Graph type")
+    parser.add_argument("--nodes", default=81, type=int,
                         help="if --graph=grid it will create a grid of dims dimensions with n = int(nodes^(1/dims))")
     parser.add_argument("--grid_dims", default=2, type=int, help="if --graph=grid, number of dimensions")
     parser.add_argument("--tree_branching", default=2, type=int, help="if --graph=tree, branching factor of tree")

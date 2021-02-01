@@ -106,6 +106,7 @@ def plot_graph_nodes_from_root_by_angle(src_dst_ids, graph_dists, diag_entries, 
     graph = get_graph(graph_dists, src_dst_ids)
     root_id = 28
 
+    graph.nodes[root_id]["angle"] = 0
     node_colors = [(root_id, 0)]
     for i in range(len(src_dst_ids)):
         src, dst = src_dst_ids[i].tolist()
@@ -115,6 +116,8 @@ def plot_graph_nodes_from_root_by_angle(src_dst_ids, graph_dists, diag_entries, 
         r = diag_entries[i].norm()
         angle = torch.acos(x / r).item()   # should be in [0, pi/4 (0.785)]
         node_colors.append((dst, angle))
+        graph.nodes[dst]["angle"] = angle
+    return graph
 
     pos = nx.kamada_kawai_layout(graph) # spring_layout(graph, iterations=100)
 
@@ -135,12 +138,12 @@ def plot_graph_nodes_from_root_by_angle(src_dst_ids, graph_dists, diag_entries, 
     plt.savefig("plots/edges/newplots/vizgraph-" + title + f"-root{root_id}.png")
 
 
-def plot_graph_edges_by_angle(src_dst_ids, graph_dists, diag_entries, title):
+def plot_graph_edges_by_angle(src_dst_ids, graph_dists, diag_entries, title, graph, export_graph=True):
     """
     Graph visualization of the edges in the graph.
     Color of the edge (A,B) represents the angle of the entries of the path (A,B)
     """
-    graph = nx.Graph()
+    # graph = nx.Graph()
     for i in range(len(src_dst_ids)):
         gdist = graph_dists[i].item()
         if gdist != 1: continue
@@ -148,7 +151,11 @@ def plot_graph_edges_by_angle(src_dst_ids, graph_dists, diag_entries, title):
         x, y = diag_entries[i]
         r = diag_entries[i].norm()
         angle = torch.acos(x / r).item()   # should be in [0, pi/4 (0.785)]
-        graph.add_edge(src, dst, angle=angle)
+        graph.edges[(src, dst)]["angle"] = angle
+
+    if export_graph:
+        nx.write_gexf(graph, path="graphs/" + title + ".gexf")
+        return
 
     pos = nx.kamada_kawai_layout(graph)     # spring_layout(graph, iterations=100)
 
@@ -215,7 +222,7 @@ def plot2d_all_edges(src_dst_ids, graph_dists, diag_entries, title):
 
 def main():
     parser = argparse.ArgumentParser(description="edge_diag_plot.py")
-    parser.add_argument("--load_model", default="ckpt/upper2d-prod-root-treegrids-9-2-2-best-1000ep", required=False, help="Path to model to load")
+    parser.add_argument("--load_model", default="ckpt/upper-fone2d-grid2d-81-best-975ep", required=False, help="Path to model to load")
     # parser.add_argument("--data", default="prod-cart-treetree", required=False, type=str, help="Name of prep folder")
     # parser.add_argument("--model", default="upper-fone", type=str, help="Name of manifold used in the run")
     parser.add_argument("--dims", default=2, type=int, help="Dimensions for the model.")
@@ -241,6 +248,7 @@ def main():
     if "prod-root-gridtrees-9-2-2" in args.load_model: args.data = "prod-root-gridtrees-9-2-2"
     if "grid2d-25" in args.load_model: args.data = "grid2d-25"
     if "grid4d-256" in args.load_model: args.data = "grid4d-256"
+    if "grid2d-81" in args.load_model: args.data = "grid2d-81"
     if "tree3-5" in args.load_model: args.data = "tree3-5"
     if "tree3-3" in args.load_model: args.data = "tree3-3"
     if "bio-diseasome" in args.load_model: args.data = "bio-diseasome"
@@ -275,12 +283,12 @@ def main():
     log.info(f"Average distortion over training set: {avg_distortion * 100:.2f}")
 
     title = f"{args.model}{args.dims}d-{args.data}"
-    plot_graph_nodes_from_root_by_angle(src_dst_ids, graph_dists, diag_entries, title)
-    plt.clf()
-    plot_graph_edges_by_angle(src_dst_ids, graph_dists, diag_entries, title)
-    plt.clf()
-    plot2d_all_edges(src_dst_ids, graph_dists, diag_entries, title)
-    plt.clf()
+    graph = plot_graph_nodes_from_root_by_angle(src_dst_ids, graph_dists, diag_entries, title)
+    # plt.clf()
+    plot_graph_edges_by_angle(src_dst_ids, graph_dists, diag_entries, title, graph)
+    # plt.clf()
+    # plot2d_all_edges(src_dst_ids, graph_dists, diag_entries, title)
+    # plt.clf()
     return
 
     xs = diag_entries[index, 0].numpy()

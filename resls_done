@@ -42,3 +42,13 @@ ckpt/upper-finf2d-tree3-3-best-1000ep
 ckpt/upper2d-prod-root-treegrids-9-2-2-best-1000ep
 ckpt/upper-finf2d-prod-root-treegrids-9-2-2-best-975ep
 ckpt/upper-fone2d-prod-root-treegrids-9-2-2-best-1000ep
+
+ckpt/upper2d-prod-root-gridtrees-9-2-2-best-1000ep
+ckpt/upper-finf2d-prod-root-gridtrees-9-2-2-best-1000ep
+ckpt/upper-fone2d-prod-root-gridtrees-9-2-2-best-1000ep
+
+graphs/upper2d-grid2d-25.gexf
+graphs/upper-finf2d-grid2d-25.gexf
+
+graphs/upper-fone2d-bio-diseasome.gexf
+graphs/upper-fone2d-csphd.gexf
