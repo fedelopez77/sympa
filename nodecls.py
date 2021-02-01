@@ -54,7 +54,7 @@ def load_data(path_to_saved_model):
     """
     print(f"Loading saved model from {path_to_saved_model}")
     model = torch.load(path_to_saved_model)
-    features = model["model"]["module.embeddings.embeds"]   # points x dim or points x 2 x n x n
+    features = model["model"]["module.embeddings.embeds"]   # points x dim or points x 2 x n x n or points x n x n
     if "bounded" in path_to_saved_model or "upper" in path_to_saved_model:
         n = features.shape[-1]
         # Old way: concat of real and imaginary coordinates
@@ -100,6 +100,11 @@ def load_data(path_to_saved_model):
         u_feat = u[:, row, col]               # b x n * (n+1) / 2
         v_feat = v[:, row, col]               # b x n * (n+1) / 2
         features = torch.cat((u_feat, v_feat), -1)    # b x n * (n+1)
+    if "spd" in path_to_saved_model:
+        n = features.shape[-1]
+        log_mat = sm.matrix_log(features)           # b x n x n
+        row, col = torch.triu_indices(n, n)
+        features = log_mat[:, row, col]               # b x n * (n+1) / 2
     else:
         dims = features.shape[-1]
         if "euclidean" in path_to_saved_model:
