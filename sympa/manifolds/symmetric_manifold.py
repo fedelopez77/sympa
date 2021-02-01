@@ -31,6 +31,21 @@ def compute_finsler_metric_infinity(d: torch.Tensor) -> torch.Tensor:
     return res
 
 
+def compute_finsler_metric_minimum(d: torch.Tensor) -> torch.Tensor:
+    """
+    Given d_i = log((1 + r_i) / (1 - r_i)), with r_i the eigenvalues of the crossratio matrix,
+    the Finsler distance of minimum entropy (F_{min})is given by the summation of the weighted values
+    \sum  2 * (n + 1 - i) * r_i
+    :param d: b x n: d_i = log((1 + r_i) / (1 - r_i)), with r_i the eigenvalues of the crossratio matrix,
+    :return: b x 1: Finsler distance
+    """
+    n = d.shape[-1]
+    factor = 2
+    weights = factor * (n + 1 - torch.arange(start=1, end=n + 1).unsqueeze(0))
+    res = torch.sum(weights * d, dim=-1)
+    return res
+
+
 def compute_riemannian_metric(d: torch.Tensor) -> torch.Tensor:
     """
     Given d_i = log((1 + r_i) / (1 - r_i)), with r_i the eigenvalues of the crossratio matrix,
@@ -72,6 +87,8 @@ class SymmetricManifold(Manifold, ABC):
             self.compute_metric = compute_finsler_metric_one
         elif metric == Metric.FINSLER_INFINITY.value:
             self.compute_metric = compute_finsler_metric_infinity
+        elif metric == Metric.FINSLER_MINIMUM.value:
+            self.compute_metric = compute_finsler_metric_minimum
         else:
             raise ValueError(f"Unrecognized metric: {metric}")
 

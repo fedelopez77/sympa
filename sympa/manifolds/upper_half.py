@@ -100,9 +100,10 @@ class UpperHalfManifold(SymmetricManifold):
         """
         from_ = kwargs.get("from_", -0.001)
         to = kwargs.get("to", 0.001)
-        perturbation = sm.squared_to_symmetric(torch.Tensor(size[0], self.ndim, self.ndim).uniform_(from_, to))
+        dims = size[-1]
+        perturbation = sm.squared_to_symmetric(torch.Tensor(size[0], dims, dims).uniform_(from_, to))
         identity = torch.eye(self.ndim).unsqueeze(0).repeat(size[0], 1, 1)
         imag_part = identity + perturbation
 
-        real_part = sm.squared_to_symmetric(torch.Tensor(size[0], self.ndim, self.ndim).uniform_(from_, to))
+        real_part = sm.squared_to_symmetric(torch.Tensor(size[0], dims, dims).uniform_(from_, to))
         return sm.stick(real_part, imag_part).to(device=device, dtype=dtype)
