@@ -1,5 +1,5 @@
 import sympa.tests
-from sympa.math import symmetric_math as sm
+from sympa.math import compsym_math as sm
 from sympa.math.caley_transform import caley_transform, inverse_caley_transform
 from sympa.manifolds import BoundedDomainManifold, UpperHalfManifold
 from tests.utils import get_random_symmetric_matrices
@@ -12,8 +12,8 @@ class TestCaleyTransform(sympa.tests.TestCase):
     def setUp(self):
         super().setUp()
         torch.set_default_dtype(torch.float64)
-        self.upper_half_manifold = UpperHalfManifold(ndim=3)
-        self.bounded_manifold = BoundedDomainManifold(ndim=3)
+        self.upper_half_manifold = UpperHalfManifold(dim=3)
+        self.bounded_manifold = BoundedDomainManifold(dim=3)
 
     def test_caley_transform_real_pos_imag_pos(self):
         x = self.upper_half_manifold.random(10)

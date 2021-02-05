@@ -5,7 +5,7 @@ https://www.symbolab.com/solver/complex-numbers-calculator/
 
 import torch
 import unittest
-import sympa.math.symmetric_math as sm
+import sympa.math.compsym_math as sm
 import sympa.tests
 from tests.utils import get_random_symmetric_matrices
 

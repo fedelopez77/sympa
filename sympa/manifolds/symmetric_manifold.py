@@ -2,7 +2,7 @@ from abc import ABC
 from typing import Union, Tuple, Optional
 import torch
 from geoopt.manifolds.base import Manifold
-from sympa.math import symmetric_math as sm
+from sympa.math import compsym_math as sm
 from sympa.manifolds.metric import Metric
 from sympa.math.caley_transform import caley_transform
 from sympa.math.takagi_factorization import TakagiFactorization
@@ -71,15 +71,18 @@ class SymmetricManifold(Manifold, ABC):
     name = "Symmetric Space"
     __scaling__ = Manifold.__scaling__.copy()
 
-    def __init__(self, ndim=1, metric=Metric.RIEMANNIAN.value):
+    def __init__(self, dim=2, ndim=2, metric=Metric.RIEMANNIAN.value):
         """
-        Space of symmetric matrices of shape ndim x ndim
+        Space of symmetric matrices of shape dim x dim
 
-        :param ndim: number of dimensions of the matrices
+        :param dim: dimensions of the matrices
+        :param ndim: number of dimensions of tensors. This parameter is not used in this class and
+        it is kept for compatibility with Manifold base class
         """
         super().__init__()
+        self.dim = dim
         self.ndim = ndim
-        self.takagi_factorization = TakagiFactorization(ndim)
+        self.takagi_factorization = TakagiFactorization(dim)
         self.projected_points = 0
         if metric == Metric.RIEMANNIAN.value:
             self.compute_metric = compute_riemannian_metric
@@ -91,7 +94,7 @@ class SymmetricManifold(Manifold, ABC):
             self.compute_metric = compute_finsler_metric_minimum
         elif metric == Metric.WEIGHTED_SUM.value:
             self.compute_metric = self.compute_weighted_sum
-            self.weights = torch.nn.parameter.Parameter(torch.ones((1, self.ndim)))
+            self.weights = torch.nn.parameter.Parameter(torch.ones((1, self.dim)))
         else:
             raise ValueError(f"Unrecognized metric: {metric}")
 
@@ -177,10 +180,10 @@ class SymmetricManifold(Manifold, ABC):
         bool, str or None
             check result and the reason of fail if any
         """
-        ok = shape[-1] == self.ndim and shape[-2] == self.ndim
+        ok = shape[-1] == self.dim and shape[-2] == self.dim
         if not ok:
             reason = "'{}' on the {} requires more than {} dim".format(
-                name, self, self.ndim
+                name, self, self.dim
             )
         else:
             reason = None
@@ -188,7 +191,7 @@ class SymmetricManifold(Manifold, ABC):
 
     def _check_matrices_are_symmetric(self, x: torch.Tensor, *, atol=1e-5, rtol=1e-5):
         """
-        :param x: point in the symmetric manifold of shape (2, ndims, ndims)
+        :param x: point in the symmetric manifold of shape (2, dim, dim)
         :param atol:
         :param rtol:
         :return: True if real and imaginary parts of the point x are symmetric matrices,

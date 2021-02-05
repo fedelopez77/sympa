@@ -4,7 +4,7 @@ import torch.nn as nn
 from sympa import config
 import geoopt as gt
 from sympa.manifolds.metric import Metric
-from sympa.manifolds import BoundedDomainManifold, UpperHalfManifold
+from sympa.manifolds import BoundedDomainManifold, UpperHalfManifold, SymmetricPositiveDefinite
 
 
 class Embeddings(nn.Module, abc.ABC):
@@ -63,7 +63,7 @@ class ComplexSymmetricMatrixEmbeddings(Embeddings):
         :param embedding_dim: dimensionality of matrix embeddings.
         :param manifold: UpperHalfManifold or BoundedDomainManifold
         """
-        _embeds = manifold.random(num_embeddings, from_=-config.INIT_EPS, to=config.INIT_EPS)
+        _embeds = manifold.random(num_embeddings, embedding_dim, from_=-config.INIT_EPS, to=config.INIT_EPS)
         super().__init__(num_embeddings, embedding_dim, manifold, _embeds)
 
     def norm(self):
@@ -89,16 +89,17 @@ def get_euclidean_manifold(dims): return gt.Euclidean(1)
 def get_poincare_manifold(dims): return gt.PoincareBall()
 def get_lorentz_manifold(dims): return gt.Lorentz()
 def get_sphere_manifold(dims): return gt.Sphere()
-def get_upper_manifold(dims): return UpperHalfManifold(dims, metric=Metric.RIEMANNIAN.value)
-def get_upper_fone_manifold(dims): return UpperHalfManifold(dims, metric=Metric.FINSLER_ONE.value)
-def get_upper_finf_manifold(dims): return UpperHalfManifold(dims, metric=Metric.FINSLER_INFINITY.value)
-def get_upper_fmin_manifold(dims): return UpperHalfManifold(dims, metric=Metric.FINSLER_MINIMUM.value)
-def get_upper_wsum_manifold(dims): return UpperHalfManifold(dims, metric=Metric.WEIGHTED_SUM.value)
-def get_bounded_manifold(dims): return BoundedDomainManifold(dims, metric=Metric.RIEMANNIAN.value)
-def get_bounded_fone_manifold(dims): return BoundedDomainManifold(dims, metric=Metric.FINSLER_ONE.value)
-def get_bounded_finf_manifold(dims): return BoundedDomainManifold(dims, metric=Metric.FINSLER_INFINITY.value)
-def get_bounded_fmin_manifold(dims): return BoundedDomainManifold(dims, metric=Metric.FINSLER_MINIMUM.value)
-def get_bounded_wsum_manifold(dims): return BoundedDomainManifold(dims, metric=Metric.WEIGHTED_SUM.value)
+def get_upper_manifold(dims): return UpperHalfManifold(dim=dims, metric=Metric.RIEMANNIAN.value)
+def get_upper_fone_manifold(dims): return UpperHalfManifold(dim=dims, metric=Metric.FINSLER_ONE.value)
+def get_upper_finf_manifold(dims): return UpperHalfManifold(dim=dims, metric=Metric.FINSLER_INFINITY.value)
+def get_upper_fmin_manifold(dims): return UpperHalfManifold(dim=dims, metric=Metric.FINSLER_MINIMUM.value)
+def get_upper_wsum_manifold(dims): return UpperHalfManifold(dim=dims, metric=Metric.WEIGHTED_SUM.value)
+def get_bounded_manifold(dims): return BoundedDomainManifold(dim=dims, metric=Metric.RIEMANNIAN.value)
+def get_bounded_fone_manifold(dims): return BoundedDomainManifold(dim=dims, metric=Metric.FINSLER_ONE.value)
+def get_bounded_finf_manifold(dims): return BoundedDomainManifold(dim=dims, metric=Metric.FINSLER_INFINITY.value)
+def get_bounded_fmin_manifold(dims): return BoundedDomainManifold(dim=dims, metric=Metric.FINSLER_MINIMUM.value)
+def get_bounded_wsum_manifold(dims): return BoundedDomainManifold(dim=dims, metric=Metric.WEIGHTED_SUM.value)
+def get_spd(dims): return SymmetricPositiveDefinite(dim=dims)
 
 
 def get_prod_hysph_manifold(dims):
@@ -137,7 +138,8 @@ class ManifoldBuilder:
         "bounded-fone": get_bounded_fone_manifold,
         "bounded-finf": get_bounded_finf_manifold,
         "bounded-fmin": get_bounded_fmin_manifold,
-        "bounded-wsum": get_bounded_wsum_manifold
+        "bounded-wsum": get_bounded_wsum_manifold,
+        "spd": get_spd
     }
 
     @classmethod
@@ -153,7 +155,7 @@ class EmbeddingsBuilder:
 
     @classmethod
     def _get_table(cls, model_name: str):
-        if "upper" in model_name or "bounded" in model_name:
+        if "upper" in model_name or "bounded" in model_name or "spd" in model_name:
             return ComplexSymmetricMatrixEmbeddings
         if model_name in {"euclidean", "poincare", "lorentz", "sphere", "prod-hysph", "prod-hyhy", "prod-hyeu"}:
             return VectorEmbeddings

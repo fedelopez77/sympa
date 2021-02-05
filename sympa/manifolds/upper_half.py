@@ -2,7 +2,7 @@ import torch
 from geoopt.manifolds.base import Manifold
 from sympa.manifolds import SymmetricManifold
 from sympa.manifolds.metric import Metric
-from sympa.math import symmetric_math as sm
+from sympa.math import compsym_math as sm
 from sympa.utils import get_logging
 
 log = get_logging()
@@ -22,8 +22,8 @@ class UpperHalfManifold(SymmetricManifold):
     name = "UpperHalfSpace"
     __scaling__ = Manifold.__scaling__.copy()
 
-    def __init__(self, ndim=1, metric=Metric.RIEMANNIAN.value):
-        super().__init__(ndim=ndim, metric=metric)
+    def __init__(self, dim=2, ndim=2, metric=Metric.RIEMANNIAN.value):
+        super().__init__(dim=dim, ndim=ndim, metric=metric)
 
     def egrad2rgrad(self, z: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
         """
@@ -100,9 +100,10 @@ class UpperHalfManifold(SymmetricManifold):
         """
         from_ = kwargs.get("from_", -0.001)
         to = kwargs.get("to", 0.001)
-        perturbation = sm.squared_to_symmetric(torch.Tensor(size[0], self.ndim, self.ndim).uniform_(from_, to))
-        identity = torch.eye(self.ndim).unsqueeze(0).repeat(size[0], 1, 1)
+        dims = self.dim
+        perturbation = sm.squared_to_symmetric(torch.Tensor(size[0], dims, dims).uniform_(from_, to))
+        identity = torch.eye(dims).unsqueeze(0).repeat(size[0], 1, 1)
         imag_part = identity + perturbation
 
-        real_part = sm.squared_to_symmetric(torch.Tensor(size[0], self.ndim, self.ndim).uniform_(from_, to))
+        real_part = sm.squared_to_symmetric(torch.Tensor(size[0], dims, dims).uniform_(from_, to))
         return sm.stick(real_part, imag_part).to(device=device, dtype=dtype)

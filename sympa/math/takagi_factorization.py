@@ -1,7 +1,7 @@
 
 import torch
 from sympa.config import DEVICE
-import sympa.math.symmetric_math as sm
+import sympa.math.compsym_math as sm
 from sympa.utils import row_sort, assert_all_close, get_logging
 
 log = get_logging()

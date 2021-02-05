@@ -20,7 +20,7 @@ from tqdm import tqdm
 from sympa import config
 from sympa.metrics import AverageDistortionMetric
 from sympa.model import Model
-import sympa.math.symmetric_math as sm
+import sympa.math.compsym_math as sm
 from distortion_histogram import load_model
 from train import load_training_data
 from random import random

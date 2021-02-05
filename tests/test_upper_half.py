@@ -1,7 +1,7 @@
 import torch
 import unittest
 from sympa.manifolds import UpperHalfManifold
-import sympa.math.symmetric_math as sm
+import sympa.math.compsym_math as sm
 import sympa.tests
 from tests.utils import get_random_symmetric_matrices
 
@@ -11,11 +11,11 @@ class TestUpperHalfManifold(sympa.tests.TestCase):
     def setUp(self):
         super().setUp()
         torch.set_default_dtype(torch.float64)
-        self.ndims = 3
-        self.manifold = UpperHalfManifold(ndim=self.ndims)
+        self.dims = 3
+        self.manifold = UpperHalfManifold(dim=self.dims)
 
     def test_proj_x_real_pos_imag_pos(self):
-        x = get_random_symmetric_matrices(10, self.ndims)
+        x = get_random_symmetric_matrices(10, self.dims)
 
         proj_x = self.manifold.projx(x)
 
@@ -27,7 +27,7 @@ class TestUpperHalfManifold(sympa.tests.TestCase):
             self.assertTrue(self.manifold.check_point_on_manifold(point))
 
     def test_proj_x_real_pos_imag_neg(self):
-        x = get_random_symmetric_matrices(10, self.ndims)
+        x = get_random_symmetric_matrices(10, self.dims)
         x = sm.stick(sm.real(x), sm.imag(x) * -1)
 
         proj_x = self.manifold.projx(x)
@@ -40,7 +40,7 @@ class TestUpperHalfManifold(sympa.tests.TestCase):
             self.assertTrue(self.manifold.check_point_on_manifold(point))
 
     def test_proj_x_real_neg_imag_pos(self):
-        x = get_random_symmetric_matrices(10, self.ndims)
+        x = get_random_symmetric_matrices(10, self.dims)
         x = sm.stick(sm.real(x) * -1, sm.imag(x))
 
         proj_x = self.manifold.projx(x)
@@ -53,7 +53,7 @@ class TestUpperHalfManifold(sympa.tests.TestCase):
             self.assertTrue(self.manifold.check_point_on_manifold(point))
 
     def test_proj_x_real_neg_imag_neg(self):
-        x = get_random_symmetric_matrices(10, self.ndims)
+        x = get_random_symmetric_matrices(10, self.dims)
         x = sm.stick(sm.real(x) * -1, sm.imag(x) * -1)
 
         proj_x = self.manifold.projx(x)
@@ -93,14 +93,14 @@ class TestUpperHalfManifold(sympa.tests.TestCase):
             self.assertTrue(self.manifold.check_point_on_manifold(point))
 
     def test_random_generator_4d(self):
-        manifold = UpperHalfManifold(ndim=4)
+        manifold = UpperHalfManifold(dim=4)
         x = manifold.random(100)
 
         for point in x:
             self.assertTrue(manifold.check_point_on_manifold(point))
 
     def test_random_generator_50d(self):
-        manifold = UpperHalfManifold(ndim=50)
+        manifold = UpperHalfManifold(dim=50)
         x = manifold.random(100)
 
         for point in x:
@@ -163,7 +163,7 @@ class TestUpperHalfManifold(sympa.tests.TestCase):
     def test_distance_is_symmetric_with_diagonal_matrices(self):
         x = self.manifold.random(10)
         y = self.manifold.random(10)
-        diagonal_mask = torch.eye(self.ndims).unsqueeze(0).repeat(10, 1, 1).bool()
+        diagonal_mask = torch.eye(self.dims).unsqueeze(0).repeat(10, 1, 1).bool()
         diagonal_mask = sm.stick(diagonal_mask, diagonal_mask)
         x = torch.where(diagonal_mask, x, torch.zeros_like(x))
         y = torch.where(diagonal_mask, y, torch.zeros_like(y))

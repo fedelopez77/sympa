@@ -1,7 +1,7 @@
 import torch
 import unittest
 from sympa.manifolds import BoundedDomainManifold
-import sympa.math.symmetric_math as sm
+import sympa.math.compsym_math as sm
 from sympa.math.caley_transform import inverse_caley_transform
 import sympa.tests
 from tests.utils import get_random_symmetric_matrices
@@ -12,7 +12,7 @@ class TestBoundedDomainManifold(sympa.tests.TestCase):
     def setUp(self):
         super().setUp()
         torch.set_default_dtype(torch.float64)
-        self.manifold = BoundedDomainManifold(ndim=3)
+        self.manifold = BoundedDomainManifold(dim=3)
 
     def test_proj_x_real_pos_imag_pos(self):
         x = get_random_symmetric_matrices(10, 3)
