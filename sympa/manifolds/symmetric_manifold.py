@@ -89,6 +89,9 @@ class SymmetricManifold(Manifold, ABC):
             self.compute_metric = compute_finsler_metric_infinity
         elif metric == Metric.FINSLER_MINIMUM.value:
             self.compute_metric = compute_finsler_metric_minimum
+        elif metric == Metric.WEIGHTED_SUM.value:
+            self.compute_metric = self.compute_weighted_sum
+            self.weights = torch.nn.parameter.Parameter(torch.ones((1, self.ndim)))
         else:
             raise ValueError(f"Unrecognized metric: {metric}")
 
@@ -122,6 +125,19 @@ class SymmetricManifold(Manifold, ABC):
         d = (1 + eigvalues) / (1 - eigvalues).clamp(min=eps)
         d = torch.log(d)
         res = self.compute_metric(d)
+        return res
+
+    def compute_weighted_sum(self, d: torch.Tensor) -> torch.Tensor:
+        """
+        Given d_i = log((1 + r_i) / (1 - r_i)), with r_i the eigenvalues of the crossratio matrix,
+        we learn weights for each eigenvalue and apply a weighted average such that:
+        distance = \sum  w_i * r_i
+        :param d: b x n: d_i = log((1 + r_i) / (1 - r_i)), with r_i the eigenvalues of the crossratio matrix,
+        :return: b x 1: Finsler distance
+        """
+        weights = torch.nn.functional.relu(self.weights)    # 1 x n
+        res = weights * d
+        res = torch.sum(res, dim=-1)
         return res
 
     def retr(self, x: torch.Tensor, u: torch.Tensor) -> torch.Tensor:

@@ -93,10 +93,12 @@ def get_upper_manifold(dims): return UpperHalfManifold(dims, metric=Metric.RIEMA
 def get_upper_fone_manifold(dims): return UpperHalfManifold(dims, metric=Metric.FINSLER_ONE.value)
 def get_upper_finf_manifold(dims): return UpperHalfManifold(dims, metric=Metric.FINSLER_INFINITY.value)
 def get_upper_fmin_manifold(dims): return UpperHalfManifold(dims, metric=Metric.FINSLER_MINIMUM.value)
+def get_upper_wsum_manifold(dims): return UpperHalfManifold(dims, metric=Metric.WEIGHTED_SUM.value)
 def get_bounded_manifold(dims): return BoundedDomainManifold(dims, metric=Metric.RIEMANNIAN.value)
 def get_bounded_fone_manifold(dims): return BoundedDomainManifold(dims, metric=Metric.FINSLER_ONE.value)
 def get_bounded_finf_manifold(dims): return BoundedDomainManifold(dims, metric=Metric.FINSLER_INFINITY.value)
 def get_bounded_fmin_manifold(dims): return BoundedDomainManifold(dims, metric=Metric.FINSLER_MINIMUM.value)
+def get_bounded_wsum_manifold(dims): return BoundedDomainManifold(dims, metric=Metric.WEIGHTED_SUM.value)
 
 
 def get_prod_hysph_manifold(dims):
@@ -130,10 +132,12 @@ class ManifoldBuilder:
         "upper-fone": get_upper_fone_manifold,
         "upper-finf": get_upper_finf_manifold,
         "upper-fmin": get_upper_fmin_manifold,
+        "upper-wsum": get_upper_wsum_manifold,
         "bounded": get_bounded_manifold,
         "bounded-fone": get_bounded_fone_manifold,
         "bounded-finf": get_bounded_finf_manifold,
-        "bounded-fmin": get_bounded_fmin_manifold
+        "bounded-fmin": get_bounded_fmin_manifold,
+        "bounded-wsum": get_bounded_wsum_manifold
     }
 
     @classmethod
@@ -151,6 +155,6 @@ class EmbeddingsBuilder:
     def _get_table(cls, model_name: str):
         if "upper" in model_name or "bounded" in model_name:
             return ComplexSymmetricMatrixEmbeddings
-        if model_name in ["euclidean", "poincare", "lorentz", "sphere", "prod-hysph", "prod-hyhy", "prod-hyeu"]:
+        if model_name in {"euclidean", "poincare", "lorentz", "sphere", "prod-hysph", "prod-hyhy", "prod-hyeu"}:
             return VectorEmbeddings
         raise ValueError(f"Unrecognized embedding model: {model_name}")

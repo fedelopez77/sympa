@@ -46,6 +46,9 @@ class Runner(object):
                 self.writer.add_scalar("embeds/avg_norm", self.model.embeds_norm().mean().item(), epoch)
                 if hasattr(self.model.manifold, 'projected_points'):
                     self.writer.add_scalar("train/projected_points", self.model.manifold.projected_points, epoch)
+                if hasattr(self.model.manifold, 'weights'):
+                    for i in range(self.args.dims):
+                        self.writer.add_scalar(f"train/dist_weight_{i}", self.model.manifold.weights[0][i].item(), epoch)
 
             if epoch % self.args.save_epochs == 0 and self.is_main_process:
                 self.save_model(epoch)

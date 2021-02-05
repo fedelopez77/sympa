@@ -8,3 +8,4 @@ class Metric(Enum):
     FINSLER_ONE = 1
     FINSLER_INFINITY = 2
     FINSLER_MINIMUM = 3
+    WEIGHTED_SUM = 4

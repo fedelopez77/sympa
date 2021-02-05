@@ -17,8 +17,7 @@ def config_parser(parser):
     parser.add_argument("--data", required=True, type=str, help="Name of prep folder")
     parser.add_argument("--run_id", required=True, type=str, help="Name of model/run to export")
     # Model
-    parser.add_argument("--model", default="bounded-fone", type=str, help="Model type: 'euclidean', 'poincare', "
-                                                                       "'upper' or 'bounded'")
+    parser.add_argument("--model", default="upper", type=str, help="Model type: 'euclidean', upper-fone, etc.")
     parser.add_argument("--dims", default=3, type=int, help="Dimensions for the model.")
     parser.add_argument("--scale_init", default=1, type=float, help="Value to init scale.")
     parser.add_argument("--scale_coef", default=1, type=float, help="Coefficient to divide scale.")
@@ -119,7 +118,6 @@ def main():
 
     # correct parameters due to distributed training
     args.learning_rate *= args.n_procs
-    # TODO: see if I should do args.max_grad_norm = args.max_grad_norm / args.n_procs
 
     id2node, train_loader, valid_loader = load_training_data(args, log)
 
