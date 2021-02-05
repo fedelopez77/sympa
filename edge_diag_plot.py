@@ -50,7 +50,7 @@ def plot3d(xs, ys, zs, title):
     f.colorbar(points)
     # plt.title(title)
     # plt.show()
-    plt.savefig("plots/edges/" + title + ".png")
+    plt.savefig("plots/edges/" + title + f"-{len(xs)}.png")
 
 
 def plot2d_axis_paths(src_dst_ids, graph_dists, diag_entries, title):
@@ -104,7 +104,7 @@ def plot_graph_nodes_from_root_by_angle(src_dst_ids, graph_dists, diag_entries, 
     Color of the node X represents the angle of the entries of the path (R,X)
     """
     graph = get_graph(graph_dists, src_dst_ids)
-    root_id = 28
+    root_id = 0
 
     graph.nodes[root_id]["angle"] = 0
     node_colors = [(root_id, 0)]
@@ -242,12 +242,14 @@ def main():
 
     # get data:
     if "prod-cart-treetree" in args.load_model: args.data = "prod-cart-treetree"
+    if "prod-cart-treegrid2d-large" in args.load_model: args.data = "prod-cart-treegrid2d-large"
     if "prod-root-gridtrees9-2-5" in args.load_model: args.data = "prod-root-gridtrees9-2-5"
     if "prod-root-treegrids16-2-4" in args.load_model:args.data = "prod-root-treegrids16-2-4"
     if "prod-root-treegrids-9-2-2" in args.load_model: args.data = "prod-root-treegrids-9-2-2"
     if "prod-root-gridtrees-9-2-2" in args.load_model: args.data = "prod-root-gridtrees-9-2-2"
     if "grid2d-25" in args.load_model: args.data = "grid2d-25"
     if "grid4d-256" in args.load_model: args.data = "grid4d-256"
+    if "grid4d-625" in args.load_model: args.data = "grid4d-625"
     if "grid2d-81" in args.load_model: args.data = "grid2d-81"
     if "tree3-5" in args.load_model: args.data = "tree3-5"
     if "tree3-3" in args.load_model: args.data = "tree3-3"
@@ -255,6 +257,7 @@ def main():
     if "csphd" in args.load_model: args.data = "csphd"
     if "road-euroroad" in args.load_model: args.data = "road-euroroad"
     if "usca312" in args.load_model: args.data = "usca312"
+    if "facebook" in args.load_model: args.data = "facebook"
 
     # get model
     if "upper" in args.load_model: args.model = "upper"
@@ -279,15 +282,15 @@ def main():
     model = get_model(args)
 
     src_dst_ids, graph_dists, diag_entries, avg_distortion = get_diag_entries(model, train_loader)
-    # index = torch.LongTensor(random.sample(list(range(len(src_dst_ids))), round(len(src_dst_ids) * args.plot_subsample)))
+    index = torch.LongTensor(random.sample(list(range(len(src_dst_ids))), round(len(src_dst_ids) * args.plot_subsample)))
     log.info(f"Average distortion over training set: {avg_distortion * 100:.2f}")
 
     title = f"{args.model}{args.dims}d-{args.data}"
     graph = plot_graph_nodes_from_root_by_angle(src_dst_ids, graph_dists, diag_entries, title)
-    # plt.clf()
+    plt.clf()
     plot_graph_edges_by_angle(src_dst_ids, graph_dists, diag_entries, title, graph)
-    # plt.clf()
-    # plot2d_all_edges(src_dst_ids, graph_dists, diag_entries, title)
+    plt.clf()
+    plot2d_all_edges(src_dst_ids, graph_dists, diag_entries, title)
     # plt.clf()
     return
 

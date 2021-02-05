@@ -95,11 +95,11 @@ def main():
             # -> 2 * d**1.5 for web-edu, grqc
             # -> 2 * d**3 for road-minnesota
             # -> 2 * d**2 for the others
-            'node_size': 2000, #2 * degrees**2,
+            'node_size': 5, #2 * degrees**2,   # for synthetic: 300, for real: 5
             'cmap': curv_cmap,
             'vmin': node_curvs.min(), # 0.0,
             'vmax': node_curvs.max(), #math.pi / 4,
-            'node_color': node_curvs,
+            'node_color': "#454545", #node_curvs,
             'linewidths': 0.01,
             'edgecolors': 'k',
 
@@ -108,30 +108,35 @@ def main():
             'edge_vmin': edge_curvs.min(), # 0.0,
             'edge_vmax': edge_curvs.max(), #math.pi / 4,
             'edge_color': edge_curvs,
-            'width': 20.0
+            'width': 4      # for synthetic: 20.0, for real: 4
     }
     log("Drawing network")
     drawing = nx.draw_networkx(g, **kwargs)
     ax.axis('off')
 
-    log("Configuring ticks, etc")
-    # Plot the curvature colorbar separately.
-    divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size="5%", pad=0.1)
-    import matplotlib.colors as colors
-    cb = matplotlib.colorbar.ColorbarBase(cax, cmap=curv_cmap, orientation='vertical')
-    # cb.vmax = math.pi / 4
-    cb.set_ticks([])
+    # log("Configuring ticks, etc")
+    # # Plot the curvature colorbar separately.
+    # divider = make_axes_locatable(ax)
+    # cax = divider.append_axes("right", size="2%", pad=0.1)
+    # import matplotlib.colors as colors
+    # cb = matplotlib.colorbar.ColorbarBase(cax, cmap=curv_cmap, orientation='vertical')
+    # # cb.vmax = math.pi / 4
+    # cb.set_ticks([])
+    #
+    #
     #
     # cb.set_ticks([0, 0.5, 1.0])
-    # curv_ticks = [0, math.pi / 8, math.pi / 4]
+    # # curv_ticks = [0, math.pi / 8, math.pi / 4]
     # # We have to do this because of the curvature hack from above
-    # cb.set_ticklabels(floats_to_str(curv_ticks))
+    # # cb.set_ticklabels(floats_to_str(curv_ticks))
+    # cb.set_ticklabels(["0", "pi/8", "pi/4"])
     #
-    # # cb.outline.set_linewidth(0)
-    # cb.ax.xaxis.set_tick_params(width=10)
+    # cb.outline.set_linewidth(0)
+    # cb.ax.xaxis.set_tick_params(width=50, labelsize="large")
+    # # cb.set_label('Edge vector angle')
+    # # ax.remove()
 
-    # cb.set_label('Edge vector angle')
+
 
     # Save it
     name = args.input.split("/")[-1].replace('gexf', 'pdf')
@@ -172,7 +177,7 @@ def parse_args():
             description='Plot graphs annotated with curvature information')
     parser.add_argument('--input', type=str, required=False, default="graphs/upper-fone2d-grid2d-81.gexf",
                         help='The input graph file.')
-    parser.add_argument('--node_property', type=str, default='angle',
+    parser.add_argument('--node_property', type=str, default='',
                         help='The name of the property in the graph to read for nodes.')
     parser.add_argument('--edge_property', type=str, default='angle',
                         help='The name of the property in the graph to read for edges.')

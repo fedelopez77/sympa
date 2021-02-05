@@ -52,3 +52,26 @@ graphs/upper-finf2d-grid2d-25.gexf
 
 graphs/upper-fone2d-bio-diseasome.gexf
 graphs/upper-fone2d-csphd.gexf
+
+graphs/upper-fone2d-facebook.gexf
+
+# PAPER
+ckpt/rupper2-grid4d-625-lr1e-2-mgr50-bs512-1-best-1000ep
+ckpt/rupper-finf2-grid4d-625-lr1e-2-mgr250-bs512-1-best-575ep
+ckpt/rupper-fone2-grid4d-625-lr1e-2-mgr50-bs512-1-best-1000ep
+
+ckpt/rupper2-tree3-5-lr1e-2-mgr50-bs512-1-best-1325ep
+ckpt/rupper-finf2-tree3-5-lr1e-2-mgr250-bs512-1-best-1000ep
+ckpt/rupper-fone2-tree3-5-lr1e-2-mgr250-bs512-1-best-850ep
+
+ckpt/rupper2-prod-cart-treegrid2d-large-lr1e-2-mgr50-bs512-1-best-1000ep
+ckpt/rupper-finf2-prod-cart-treegrid2d-large-lr1e-2-mgr250-bs512-1-best-900ep
+ckpt/rupper-fone2-prod-cart-treegrid2d-large-lr1e-2-mgr50-bs512-1-best-900ep
+
+ckpt/rupper2-prod-cart-treetree-lr1e-2-mgr250-bs512-1-best-1000ep
+ckpt/rupper-finf2-prod-cart-treetree-lr1e-2-mgr250-bs512-1-best-975ep
+ckpt/rupper-fone2-prod-cart-treetree-lr1e-2-mgr50-bs512-1-best-975ep
+
+ckpt/rupper2-usca312-lr1e-2-mgr5-bs512-1-best-925ep
+ckpt/rupper-finf2-usca312-lr1e-2-mgr5-bs512-1-best-975ep
+ckpt/rupper-fone2-usca312-lr1e-2-mgr5-bs512-2-best-1000ep
