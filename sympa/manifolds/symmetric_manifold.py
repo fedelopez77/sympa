@@ -4,7 +4,7 @@ import torch
 from geoopt.manifolds.base import Manifold
 from sympa.math import compsym_math as sm
 from sympa.manifolds.metric import Metric
-from sympa.math.caley_transform import caley_transform
+from sympa.math.cayley_transform import cayley_transform
 from sympa.math.takagi_factorization import TakagiFactorization
 
 
@@ -115,7 +115,7 @@ class SymmetricManifold(Manifold, ABC):
         z2_minus_real_z1 = sm.subtract(z2, sm.stick(real_z1, torch.zeros_like(real_z1)))
         z3 = sm.bmm3(inv_sqrt_imag_z1, z2_minus_real_z1, inv_sqrt_imag_z1)
 
-        w = caley_transform(z3)
+        w = cayley_transform(z3)
 
         eigvalues, eigvectors = self.takagi_factorization.factorize(w)
 

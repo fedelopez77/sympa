@@ -1,5 +1,5 @@
-# Caley transform is used to map elements from the Upper Half Space Model to the Bounded Domain Model.
-# The inverse Caley transform can be defined as well, and it maps elements from the Bounded Domain Model
+# Cayley transform is used to map elements from the Upper Half Space Model to the Bounded Domain Model.
+# The inverse Cayley transform can be defined as well, and it maps elements from the Bounded Domain Model
 # to the Upper Half Space Model.
 # See https://en.wikipedia.org/wiki/Cayley_transform
 
@@ -7,7 +7,7 @@ from sympa.math import compsym_math as sm
 import torch
 
 
-def caley_transform(z: torch.Tensor) -> torch.Tensor:
+def cayley_transform(z: torch.Tensor) -> torch.Tensor:
     """
     T(Z): Upper Half Space model -> Bounded Domain Model
     T(Z) = (Z - i Id)(Z + i Id)^-1
@@ -24,7 +24,7 @@ def caley_transform(z: torch.Tensor) -> torch.Tensor:
     return sm.bmm(z_minus_id, inv_z_plus_id)
 
 
-def inverse_caley_transform(z: torch.Tensor) -> torch.Tensor:
+def inverse_cayley_transform(z: torch.Tensor) -> torch.Tensor:
     """
     T^-1(Z): Bounded Domain Model -> Upper Half Space model
     T^-1(Z) = i (Id + Z)(Id - Z)^-1

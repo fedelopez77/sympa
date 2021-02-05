@@ -4,7 +4,7 @@ from sympa.manifolds import SymmetricManifold
 from sympa.manifolds.upper_half import UpperHalfManifold
 from sympa.manifolds.metric import Metric
 from sympa.math import compsym_math as sm
-from sympa.math.caley_transform import caley_transform, inverse_caley_transform
+from sympa.math.cayley_transform import cayley_transform, inverse_cayley_transform
 from sympa.utils import get_logging
 
 log = get_logging()
@@ -37,8 +37,8 @@ class BoundedDomainManifold(SymmetricManifold):
         :param keepdim:
         :return: distance between x and y
         """
-        uhsm_z1 = inverse_caley_transform(z1)
-        uhsm_z2 = inverse_caley_transform(z2)
+        uhsm_z1 = inverse_cayley_transform(z1)
+        uhsm_z2 = inverse_cayley_transform(z2)
         return super().dist(uhsm_z1, uhsm_z2)
 
     def egrad2rgrad(self, z: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
@@ -128,7 +128,7 @@ class BoundedDomainManifold(SymmetricManifold):
         assumptions about uniform measure, etc.
         """
         points = UpperHalfManifold(dim=self.dim).random(*size, **kwargs)
-        return caley_transform(points)
+        return cayley_transform(points)
 
 
 def get_id_minus_conjugate_z_times_z(z: torch.Tensor):
