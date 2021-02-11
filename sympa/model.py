@@ -1,14 +1,14 @@
 import torch
 import torch.nn as nn
-from sympa.embeddings import EmbeddingsBuilder, ManifoldBuilder
+from sympa.embeddings import EmbeddingsFactory, ManifoldFactory
 
 
 class Model(nn.Module):
     """Graph embedding model that operates on different Manifolds"""
     def __init__(self, args):
         super().__init__()
-        self.manifold = ManifoldBuilder.get_manifold(name=args.model, dims=args.dims)
-        self.embeddings = EmbeddingsBuilder.get_embeddings(args.model, args.num_points, args.dims, self.manifold)
+        self.manifold = ManifoldFactory.get_manifold(manifold_name=args.manifold, metric_name=args.metric, dims=args.dims)
+        self.embeddings = EmbeddingsFactory.get_embeddings(args.manifold, args.num_points, args.dims, self.manifold)
         self.scale_coef = args.scale_coef
         self.scale = torch.nn.Parameter(torch.Tensor([self.scale_coef * args.scale_init]),
                                         requires_grad=args.train_scale)

@@ -10,6 +10,7 @@ from sympa import config
 from sympa.utils import set_seed, get_logging, scale_triplets, subsample_triplets
 from sympa.runner import Runner
 from sympa.model import Model
+from sympa.manifolds.metrics import MetricType
 
 
 def config_parser(parser):
@@ -17,7 +18,8 @@ def config_parser(parser):
     parser.add_argument("--data", required=True, type=str, help="Name of prep folder")
     parser.add_argument("--run_id", required=True, type=str, help="Name of model/run to export")
     # Model
-    parser.add_argument("--model", default="upper", type=str, help="Model type: 'euclidean', upper-fone, etc.")
+    parser.add_argument("--manifold", default="euclidean", type=str, help="Model type: euclidean, upper, spd, etc.")
+    parser.add_argument("--metric", default="wsum", type=str, help=f"Metrics: {[t.value for t in list(MetricType)]}")
     parser.add_argument("--dims", default=3, type=int, help="Dimensions for the model.")
     parser.add_argument("--scale_init", default=1, type=float, help="Value to init scale.")
     parser.add_argument("--scale_coef", default=1, type=float, help="Coefficient to divide scale.")
@@ -32,7 +34,7 @@ def config_parser(parser):
     parser.add_argument("--patience", default=50, type=int, help="Epochs of patience for scheduler and early stop.")
     parser.add_argument("--max_grad_norm", default=50.0, type=float, help="Max gradient norm.")
     parser.add_argument("--batch_size", default=1000, type=int, help="Batch size.")
-    parser.add_argument("--epochs", default=1000, type=int, help="Number of training epochs.")
+    parser.add_argument("--epochs", default=100, type=int, help="Number of training epochs.")
     parser.add_argument("--burnin", default=10, type=int, help="Number of initial epochs to train with reduce lr.")
     parser.add_argument("--grad_accum_steps", default=1, type=int,
                         help="Number of update steps to acum before backward.")

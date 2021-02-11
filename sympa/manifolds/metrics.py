@@ -5,11 +5,16 @@ import torch
 
 class MetricType(Enum):
     """Allowed types of metrics that Siegel manifolds support"""
-    RIEMANNIAN = 0
-    FINSLER_ONE = 1
-    FINSLER_INFINITY = 2
-    FINSLER_MINIMUM = 3
-    WEIGHTED_SUM = 4
+    RIEMANNIAN = "riem"
+    FINSLER_ONE = "fone"
+    FINSLER_INFINITY = "finf"
+    FINSLER_MINIMUM = "fmin"
+    WEIGHTED_SUM = "wsum"
+
+    @staticmethod
+    def from_str(label):
+        types = {t.value: t for t in list(MetricType)}
+        return types[label]
 
 
 class Metric(ABC):

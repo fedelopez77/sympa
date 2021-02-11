@@ -184,10 +184,16 @@ class Runner(object):
             raise AssertionError(f"Point outside manifold. Reason: {reason}\n{outside_point}")
 
     def export_results(self, avg_distortion, avg_precision):
-        manifold = self.args.model
+        manifold = self.args.manifold
         dims = self.args.dims
-        if "upper" in manifold or "bounded" in manifold:
+
+        if manifold == "spd":
+            dims = dims * (dims + 1) / 2
+
+        if manifold in {"upper", "bounded", "dual"}:
             dims = dims * (dims + 1)
+            manifold += "-" + self.args.metric
+
         result_data = {"data": self.args.data, "dims": dims, "manifold": manifold, "run_id": self.args.run_id,
                        "distortion": avg_distortion * 100, "mAP": avg_precision * 100}
         write_results_to_file(self.args.results_file, result_data)

@@ -59,7 +59,6 @@ class MatrixEmbeddings(Embeddings):
         The shape of the embedding table for complex matrices is: num_embeddings x 2 x dims x dims
         The second dimension is 2, since the element 0 represents the real part,
         and the element 1 represents the imaginary part of the matrices.
-
         For regular matrices (SPD in particular) the shape is: num_embeddings x embedding_dim x embedding_dim
 
         :param num_embeddings: number of elements in the table
@@ -91,28 +90,19 @@ class VectorEmbeddings(Embeddings):
         return self.embeds.data.norm(dim=-1)
 
 
-########################################## Builder logic ####################################################
+class EmbeddingsFactory:
+    @classmethod
+    def get_embeddings(cls, name: str, num_points: int, dims: int, manifold):
+        embed_table = cls._get_table(name)
+        return embed_table(num_embeddings=num_points, dims=dims, manifold=manifold)
 
-def get_euclidean_manifold(dims): return gt.Euclidean(1)
-def get_poincare_manifold(dims): return gt.PoincareBall()
-def get_lorentz_manifold(dims): return gt.Lorentz()
-def get_sphere_manifold(dims): return gt.Sphere()
-def get_upper_manifold(dims): return UpperHalfManifold(dims=dims, metric=MetricType.RIEMANNIAN)
-def get_upper_fone_manifold(dims): return UpperHalfManifold(dims=dims, metric=MetricType.FINSLER_ONE)
-def get_upper_finf_manifold(dims): return UpperHalfManifold(dims=dims, metric=MetricType.FINSLER_INFINITY)
-def get_upper_fmin_manifold(dims): return UpperHalfManifold(dims=dims, metric=MetricType.FINSLER_MINIMUM)
-def get_upper_wsum_manifold(dims): return UpperHalfManifold(dims=dims, metric=MetricType.WEIGHTED_SUM)
-def get_bounded_manifold(dims): return BoundedDomainManifold(dims=dims, metric=MetricType.RIEMANNIAN)
-def get_bounded_fone_manifold(dims): return BoundedDomainManifold(dims=dims, metric=MetricType.FINSLER_ONE)
-def get_bounded_finf_manifold(dims): return BoundedDomainManifold(dims=dims, metric=MetricType.FINSLER_INFINITY)
-def get_bounded_fmin_manifold(dims): return BoundedDomainManifold(dims=dims, metric=MetricType.FINSLER_MINIMUM)
-def get_bounded_wsum_manifold(dims): return BoundedDomainManifold(dims=dims, metric=MetricType.WEIGHTED_SUM)
-def get_dual_manifold(dims): return CompactDualManifold(dims, metric=MetricType.RIEMANNIAN)
-def get_dual_fone_manifold(dims): return CompactDualManifold(dims, metric=MetricType.FINSLER_ONE)
-def get_dual_finf_manifold(dims): return CompactDualManifold(dims, metric=MetricType.FINSLER_INFINITY)
-def get_dual_fmin_manifold(dims): return CompactDualManifold(dims, metric=MetricType.FINSLER_MINIMUM)
-def get_dual_wsum_manifold(dims): return CompactDualManifold(dims, metric=MetricType.WEIGHTED_SUM)
-def get_spd(dims): return SymmetricPositiveDefinite()
+    @classmethod
+    def _get_table(cls, model_name: str):
+        if model_name in {"upper", "bounded", "dual", "spd"}:
+            return MatrixEmbeddings
+        if model_name in {"euclidean", "poincare", "lorentz", "sphere", "prod-hysph", "prod-hyhy", "prod-hyeu"}:
+            return VectorEmbeddings
+        raise ValueError(f"Unrecognized embedding model: {model_name}")
 
 
 def get_prod_hysph_manifold(dims):
@@ -132,49 +122,30 @@ def get_prod_hyeu_manifold(dims):
     return gt.ProductManifold((poincare, dims // 2), (euclidean, dims // 2))
 
 
-class ManifoldBuilder:
+class ManifoldFactory:
 
-    _manifolds = {
-        "euclidean": get_euclidean_manifold,
-        "poincare": get_poincare_manifold,
-        "lorentz": get_lorentz_manifold,
-        "sphere": get_sphere_manifold,
+    geoopt_manifolds = {
+        "euclidean": lambda dims: gt.Euclidean(1),
+        "poincare": lambda dims: gt.PoincareBall(),
+        "lorentz": lambda dims: gt.Lorentz(),
+        "sphere": lambda dims: gt.Sphere(),
         "prod-hysph": get_prod_hysph_manifold,
         "prod-hyhy": get_prod_hyhy_manifold,
         "prod-hyeu": get_prod_hyeu_manifold,
-        "upper": get_upper_manifold,
-        "upper-fone": get_upper_fone_manifold,
-        "upper-finf": get_upper_finf_manifold,
-        "upper-fmin": get_upper_fmin_manifold,
-        "upper-wsum": get_upper_wsum_manifold,
-        "bounded": get_bounded_manifold,
-        "bounded-fone": get_bounded_fone_manifold,
-        "bounded-finf": get_bounded_finf_manifold,
-        "bounded-fmin": get_bounded_fmin_manifold,
-        "bounded-wsum": get_bounded_wsum_manifold,
-        "dual": get_dual_manifold,
-        "dual-fone": get_dual_fone_manifold,
-        "dual-finf": get_dual_finf_manifold,
-        "dual-fmin": get_dual_fmin_manifold,
-        "dual-wsum": get_dual_wsum_manifold,
-        "spd": get_spd
+        "spd": lambda dims: SymmetricPositiveDefinite(),
+    }
+
+    sympa_manifolds = {
+        "upper": UpperHalfManifold,
+        "bounded": BoundedDomainManifold,
+        "dual": CompactDualManifold
     }
 
     @classmethod
-    def get_manifold(cls, name, dims):
-        return cls._manifolds[name](dims)
+    def get_manifold(cls, manifold_name, metric_name, dims):
+        if manifold_name in cls.geoopt_manifolds:
+            return cls.geoopt_manifolds[manifold_name](dims)
 
-
-class EmbeddingsBuilder:
-    @classmethod
-    def get_embeddings(cls, name: str, num_points: int, dims: int, manifold):
-        embed_table = cls._get_table(name)
-        return embed_table(num_embeddings=num_points, dims=dims, manifold=manifold)
-
-    @classmethod
-    def _get_table(cls, model_name: str):
-        if "upper" in model_name or "bounded" in model_name or "dual" in model_name or "spd" in model_name:
-            return MatrixEmbeddings
-        if model_name in {"euclidean", "poincare", "lorentz", "sphere", "prod-hysph", "prod-hyhy", "prod-hyeu"}:
-            return VectorEmbeddings
-        raise ValueError(f"Unrecognized embedding model: {model_name}")
+        manifold = cls.sympa_manifolds[manifold_name]
+        metric = MetricType.from_str(metric_name)
+        return manifold(dims=dims, metric=metric)
