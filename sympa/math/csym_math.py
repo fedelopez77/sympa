@@ -169,6 +169,16 @@ def multiply_by_i(z: torch.Tensor):
     return stick(-imag(z), real(z))
 
 
+def trace(x: torch.Tensor, keepdim=False):
+    """
+    Batched version of trace for 2D matrices
+    :param x: tensor of squared matrices: b x n x n
+    :param keepdim: returns tensor of shape (b,) or of shape (b, 1)
+    :return: sum of the elements of the diagonal: b x 1 (or (b,))
+    """
+    return torch.diagonal(x, dim1=-2, dim2=-1).sum(-1, keepdim=keepdim)
+
+
 def repr(z: torch.Tensor):
     batch_size, _, n, _ = z.size()
     real_x, imag_x = real(z), imag(z)

@@ -10,3 +10,8 @@ Embedding graphs in SYMetric sPAces
  - matplotlib: for preprocessing only
  - tensorboardx
  - tqdm
+ 
+## Considerations
+The method `inner` is implemented for both the Upper Half space and the Bounded domain model.
+With this, experiments can be run with `RiemannianAdam`.
+However, we found them to be very unstable, therefore all experiments reported in the paper were run with `RiemannianSGD`

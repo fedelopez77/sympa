@@ -5,7 +5,7 @@ import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel
 from torch.utils.data import DataLoader, TensorDataset, SequentialSampler
 from torch.utils.data.distributed import DistributedSampler
-from geoopt.optim import RiemannianSGD
+from geoopt.optim import RiemannianSGD, RiemannianAdam
 from sympa import config
 from sympa.utils import set_seed, get_logging, scale_triplets, subsample_triplets
 from sympa.runner import Runner
@@ -24,6 +24,7 @@ def config_parser(parser):
     parser.add_argument("--train_scale", dest='train_scale', action='store_true', default=False,
                         help="Whether to train scaling or not.")
     # optim and config
+    parser.add_argument("--optim", default="rsgd", type=str, help="Optimization method.")
     parser.add_argument("--learning_rate", default=1e-2, type=float, help="Starting learning rate.")
     parser.add_argument("--reduce_factor", default=5, type=float, help="Factor to reduce lr on plateau.")
     parser.add_argument("--weight_decay", default=0.00, type=float, help="L2 Regularization.")
@@ -58,6 +59,14 @@ def get_model(args):
         saved_data = torch.load(args.load_model)
         model.load_state_dict(saved_data["model"])
     return model
+
+
+def get_optimizer(model, args):
+    if args.optim == "rsgd":
+        return RiemannianSGD(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay, stabilize=10)
+    if args.optim == "radam":
+        return RiemannianAdam(model.parameters(), lr=args.learning_rate, eps=1e-7, stabilize=10)
+    raise ValueError(f"Unkown --optim option: {args.optim}")
 
 
 def get_scheduler(optimizer, args):
@@ -128,7 +137,7 @@ def main():
 
     args.num_points = len(id2node)
     model = get_model(args)
-    optimizer = RiemannianSGD(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay, stabilize=10)
+    optimizer = get_optimizer(model, args)
     scheduler = get_scheduler(optimizer, args)
 
     if args.local_rank == 0:

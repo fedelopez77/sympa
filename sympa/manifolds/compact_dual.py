@@ -92,6 +92,9 @@ class CompactDualManifold(SiegelManifold):
             return False, "Matrices are not symmetric"
         return True, None
 
+    def inner(self, z: torch.Tensor, u: torch.Tensor, v=None, *, keepdim=False) -> torch.Tensor:
+        raise NotImplementedError()
+
     def random(self, *size, dtype=None, device=None, **kwargs) -> torch.Tensor:
         """
         Random sampling on the manifold.

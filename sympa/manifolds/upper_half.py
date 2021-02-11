@@ -65,6 +65,31 @@ class UpperHalfManifold(SiegelManifold):
 
         return sm.stick(sm.real(z), y_tilde)
 
+    def inner(self, z: torch.Tensor, u: torch.Tensor, v=None, *, keepdim=False) -> torch.Tensor:
+        """
+        Inner product for tangent vectors at point :math:`z`.
+        For the upper half space model, the inner product at point z = x + iy of the vectors u, v
+        it is (z, u, v are complex symmetric matrices):
+
+        g_{z}(u, v) = tr[ y^-1 u y^-1 \ov{v} ]
+
+        :param z: torch.Tensor point on the manifold: b x 2 x n x n
+        :param u: torch.Tensor tangent vector at point :math:`z`: b x 2 x n x n
+        :param v: Optional[torch.Tensor] tangent vector at point :math:`z`: b x 2 x n x n
+        :param keepdim: bool keep the last dim?
+        :return: torch.Tensor inner product (broadcastable): b x 2 x 1 x 1
+        """
+        if v is None:
+            v = u
+        inv_imag_z = torch.inverse(sm.imag(z))
+        inv_imag_z = sm.stick(inv_imag_z, torch.zeros_like(inv_imag_z))
+
+        res = sm.bmm3(inv_imag_z, u, inv_imag_z)
+        res = sm.bmm(res, sm.conjugate(v))
+        real_part = sm.trace(sm.real(res), keepdim=True)    # b x 1
+        real_part = torch.unsqueeze(real_part, -1)          # b x 1 x 1
+        return sm.stick(real_part, real_part)               # b x 2 x 1 x 1
+
     def _check_point_on_manifold(self, z: torch.Tensor, *, atol=1e-5, rtol=1e-5):
         """
         Util to check point lies on the manifold.

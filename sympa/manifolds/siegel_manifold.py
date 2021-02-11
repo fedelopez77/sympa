@@ -126,7 +126,7 @@ class SiegelManifold(Manifold, ABC):
         assert torch.all(eigvalues >= 0 - eps), f"Eigenvalues: {eigvalues}"
         assert torch.all(eigvalues <= 1.01), f"Eigenvalues: {eigvalues}"
 
-        # di = (1 + ri) / (1 - ri) # TODO: see if clamping only denom or whole result in case values are too large
+        # di = (1 + ri) / (1 - ri)
         d = (1 + eigvalues) / (1 - eigvalues).clamp(min=eps)
         d = torch.log(d)
         res = self.compute_metric(d)
@@ -213,20 +213,25 @@ class SiegelManifold(Manifold, ABC):
     def proju(self, x: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
         return self.egrad2rgrad(x, u)
 
-    # I think I do not need to implement any of this methods!
+    def transp(self, x: torch.Tensor, y: torch.Tensor, v: torch.Tensor) -> torch.Tensor:
+        r"""
+        Perform vector transport :math:`\mathfrak{T}_{x\to y}(v)`.
+
+        The formula for the parallel transport is very complicated so we approximate it
+        with the Euclidean parallel transport, which is just returning the tangent vector v
+
+        :param x: torch.Tensor. Start point on the manifold
+        :param y: torch.Tensor. Target point on the manifold
+        :param v: torch.Tensor. Tangent vector at point :math:`x`
+        :return: torch.Tensor. Transported tensor
+        """
+        return v
+
     def expmap(self, x: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
         # We might not need it
         pass
 
     def logmap(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-        # We might not need it
-        pass
-
-    def transp(self, x: torch.Tensor, y: torch.Tensor, v: torch.Tensor) -> torch.Tensor:
-        # We might not need it
-        pass
-
-    def inner(self, x: torch.Tensor, u: torch.Tensor, v=None, *, keepdim=False) -> torch.Tensor:
         # We might not need it
         pass
 
