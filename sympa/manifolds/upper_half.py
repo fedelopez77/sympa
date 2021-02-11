@@ -1,14 +1,11 @@
 import torch
 from geoopt.manifolds.base import Manifold
-from sympa.manifolds import SymmetricManifold
+from sympa.manifolds import SiegelManifold
 from sympa.manifolds.metric import Metric
 from sympa.math import compsym_math as sm
-from sympa.utils import get_logging
-
-log = get_logging()
 
 
-class UpperHalfManifold(SymmetricManifold):
+class UpperHalfManifold(SiegelManifold):
     """
     Upper Half Manifold.
     H_n = {z \in Sym(n, C) | Imag(z) is positive definite}.
@@ -19,7 +16,7 @@ class UpperHalfManifold(SymmetricManifold):
 
     ndim = 1
     reversible = False
-    name = "UpperHalfSpace"
+    name = "Upper Half Space"
     __scaling__ = Manifold.__scaling__.copy()
 
     def __init__(self, dim=2, ndim=2, metric=Metric.RIEMANNIAN.value):

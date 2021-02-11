@@ -1,16 +1,13 @@
 import torch
 from geoopt.manifolds.base import Manifold
-from sympa.manifolds import SymmetricManifold
+from sympa.manifolds import SiegelManifold
 from sympa.manifolds.upper_half import UpperHalfManifold
 from sympa.manifolds.metric import Metric
 from sympa.math import compsym_math as sm
 from sympa.math.cayley_transform import cayley_transform, inverse_cayley_transform
-from sympa.utils import get_logging
-
-log = get_logging()
 
 
-class BoundedDomainManifold(SymmetricManifold):
+class BoundedDomainManifold(SiegelManifold):
     """
     Bounded domain Manifold.
     D_n = {z \in Sym(n, C) | Id - ẑz is positive definite}.
@@ -21,7 +18,7 @@ class BoundedDomainManifold(SymmetricManifold):
 
     ndim = 1
     reversible = False
-    name = "BoundedDomain"
+    name = "Bounded Domain"
     __scaling__ = Manifold.__scaling__.copy()
 
     def __init__(self, dim=2, ndim=2, metric=Metric.RIEMANNIAN.value):
@@ -30,7 +27,7 @@ class BoundedDomainManifold(SymmetricManifold):
     def dist(self, z1: torch.Tensor, z2: torch.Tensor, *, keepdim=False) -> torch.Tensor:
         """
         To compute the distance in the Bounded Domain Model (BDM) we need to map the elements to the
-        Upper Half Space Model (UHSM) by means of the inverse Caley Transform, and then compute the distance
+        Upper Half Space Model (UHSM) by means of the inverse Cayley Transform, and then compute the distance
         in that domain.
 
         :param z1, z2: b x 2 x n x n: elements in the BDM

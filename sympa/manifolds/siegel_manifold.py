@@ -58,17 +58,17 @@ def compute_riemannian_metric(d: torch.Tensor) -> torch.Tensor:
     return res
 
 
-class SymmetricManifold(Manifold, ABC):
+class SiegelManifold(Manifold, ABC):
     """
-    Manifold to work on spaces S_n = {z in Sym(n, C)}. This is, z models a point in the space S. z is a symmetric
-    matrix of size nxn, with complex entries.
-
-    Abstract manifold that contains the common operations for manifolds of Symmetric matrices with complex entries
+    Manifold to work on Siegel spaces.
+    The implementation is aimed to work with realization of the Siegel space as
+    spaces of complex symmetric matrices.
+    These are of the shape: b x 2 x dim x dim
     """
 
     ndim = 1
     reversible = False
-    name = "Symmetric Space"
+    name = "Siegel Space"
     __scaling__ = Manifold.__scaling__.copy()
 
     def __init__(self, dim=2, ndim=2, metric=Metric.RIEMANNIAN.value):

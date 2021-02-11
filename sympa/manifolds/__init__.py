@@ -1,3 +1,3 @@
-from .symmetric_manifold import SymmetricManifold
+from .siegel_manifold import SiegelManifold
 from .bounded_domain import BoundedDomainManifold
 from .upper_half import UpperHalfManifold

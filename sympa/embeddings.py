@@ -68,7 +68,7 @@ class MatrixEmbeddings(Embeddings):
         """
         _embeds = manifold.random(num_embeddings, dims, dims, from_=-config.INIT_EPS, to=config.INIT_EPS)
 
-        if isinstance(manifold, SymmetricPositiveDefinite):   # scales the SPD embeddings
+        if isinstance(manifold, SymmetricPositiveDefinite):   # Scales and moves the SPD embeddings near the identity
             _embeds *= config.INIT_EPS
             _embeds += torch.diag_embed(torch.ones(num_embeddings, dims))
 
