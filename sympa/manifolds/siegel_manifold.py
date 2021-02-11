@@ -2,7 +2,7 @@ from abc import ABC
 from typing import Union, Tuple, Optional
 import torch
 from geoopt.manifolds.base import Manifold
-from sympa.math import compsym_math as sm
+from sympa.math import csym_math as sm
 from sympa.manifolds.metric import Metric
 from sympa.math.cayley_transform import cayley_transform
 from sympa.math.takagi_factorization import TakagiFactorization
@@ -71,18 +71,18 @@ class SiegelManifold(Manifold, ABC):
     name = "Siegel Space"
     __scaling__ = Manifold.__scaling__.copy()
 
-    def __init__(self, dim=2, ndim=2, metric=Metric.RIEMANNIAN.value):
+    def __init__(self, dims=2, ndim=2, metric=Metric.RIEMANNIAN.value):
         """
         Space of symmetric matrices of shape dim x dim
 
-        :param dim: dimensions of the matrices
+        :param dims: dimensions of the matrices
         :param ndim: number of dimensions of tensors. This parameter is not used in this class and
         it is kept for compatibility with Manifold base class
         """
         super().__init__()
-        self.dim = dim
+        self.dims = dims
         self.ndim = ndim
-        self.takagi_factorization = TakagiFactorization(dim)
+        self.takagi_factorization = TakagiFactorization(dims)
         self.projected_points = 0
         if metric == Metric.RIEMANNIAN.value:
             self.compute_metric = compute_riemannian_metric
@@ -94,7 +94,7 @@ class SiegelManifold(Manifold, ABC):
             self.compute_metric = compute_finsler_metric_minimum
         elif metric == Metric.WEIGHTED_SUM.value:
             self.compute_metric = self.compute_weighted_sum
-            self.weights = torch.nn.parameter.Parameter(torch.ones((1, self.dim)))
+            self.weights = torch.nn.parameter.Parameter(torch.ones((1, self.dims)))
         else:
             raise ValueError(f"Unrecognized metric: {metric}")
 
@@ -180,10 +180,10 @@ class SiegelManifold(Manifold, ABC):
         bool, str or None
             check result and the reason of fail if any
         """
-        ok = shape[-1] == self.dim and shape[-2] == self.dim
+        ok = shape[-1] == self.dims and shape[-2] == self.dims
         if not ok:
             reason = "'{}' on the {} requires more than {} dim".format(
-                name, self, self.dim
+                name, self, self.dims
             )
         else:
             reason = None

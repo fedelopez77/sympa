@@ -3,7 +3,7 @@ from geoopt.manifolds.base import Manifold
 from sympa.manifolds import SiegelManifold
 from sympa.manifolds.upper_half import UpperHalfManifold
 from sympa.manifolds.metric import Metric
-from sympa.math import compsym_math as sm
+from sympa.math import csym_math as sm
 from sympa.math.cayley_transform import cayley_transform, inverse_cayley_transform
 
 
@@ -21,8 +21,8 @@ class BoundedDomainManifold(SiegelManifold):
     name = "Bounded Domain"
     __scaling__ = Manifold.__scaling__.copy()
 
-    def __init__(self, dim=2, ndim=2, metric=Metric.RIEMANNIAN.value):
-        super().__init__(dim=dim, ndim=ndim, metric=metric)
+    def __init__(self, dims=2, ndim=2, metric=Metric.RIEMANNIAN.value):
+        super().__init__(dims=dims, ndim=ndim, metric=metric)
 
     def dist(self, z1: torch.Tensor, z2: torch.Tensor, *, keepdim=False) -> torch.Tensor:
         """
@@ -124,7 +124,7 @@ class BoundedDomainManifold(SiegelManifold):
         The exact implementation depends on manifold and usually does not follow all
         assumptions about uniform measure, etc.
         """
-        points = UpperHalfManifold(dim=self.dim).random(*size, **kwargs)
+        points = UpperHalfManifold(dims=self.dims).random(*size, **kwargs)
         return cayley_transform(points)
 
 

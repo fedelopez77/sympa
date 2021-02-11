@@ -1,7 +1,7 @@
 import torch
 import unittest
 from sympa.manifolds import UpperHalfManifold
-import sympa.math.compsym_math as sm
+import sympa.math.csym_math as sm
 import sympa.tests
 from tests.utils import get_random_symmetric_matrices
 
@@ -12,7 +12,7 @@ class TestUpperHalfManifold(sympa.tests.TestCase):
         super().setUp()
         torch.set_default_dtype(torch.float64)
         self.dims = 3
-        self.manifold = UpperHalfManifold(dim=self.dims)
+        self.manifold = UpperHalfManifold(dims=self.dims)
 
     def test_proj_x_real_pos_imag_pos(self):
         x = get_random_symmetric_matrices(10, self.dims)
@@ -93,14 +93,14 @@ class TestUpperHalfManifold(sympa.tests.TestCase):
             self.assertTrue(self.manifold.check_point_on_manifold(point))
 
     def test_random_generator_4d(self):
-        manifold = UpperHalfManifold(dim=4)
+        manifold = UpperHalfManifold(dims=4)
         x = manifold.random(100)
 
         for point in x:
             self.assertTrue(manifold.check_point_on_manifold(point))
 
     def test_random_generator_50d(self):
-        manifold = UpperHalfManifold(dim=50)
+        manifold = UpperHalfManifold(dims=50)
         x = manifold.random(100)
 
         for point in x:

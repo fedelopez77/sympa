@@ -1,5 +1,5 @@
 import torch
-import sympa.math.compsym_math as sm
+import sympa.math.csym_math as sm
 
 
 def get_random_symmetric_matrices(points: int, dims: int):

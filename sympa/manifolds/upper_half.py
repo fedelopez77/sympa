@@ -2,7 +2,7 @@ import torch
 from geoopt.manifolds.base import Manifold
 from sympa.manifolds import SiegelManifold
 from sympa.manifolds.metric import Metric
-from sympa.math import compsym_math as sm
+from sympa.math import csym_math as sm
 
 
 class UpperHalfManifold(SiegelManifold):
@@ -19,8 +19,8 @@ class UpperHalfManifold(SiegelManifold):
     name = "Upper Half Space"
     __scaling__ = Manifold.__scaling__.copy()
 
-    def __init__(self, dim=2, ndim=2, metric=Metric.RIEMANNIAN.value):
-        super().__init__(dim=dim, ndim=ndim, metric=metric)
+    def __init__(self, dims=2, ndim=2, metric=Metric.RIEMANNIAN.value):
+        super().__init__(dims=dims, ndim=ndim, metric=metric)
 
     def egrad2rgrad(self, z: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
         """
@@ -97,7 +97,7 @@ class UpperHalfManifold(SiegelManifold):
         """
         from_ = kwargs.get("from_", -0.001)
         to = kwargs.get("to", 0.001)
-        dims = self.dim
+        dims = self.dims
         perturbation = sm.squared_to_symmetric(torch.Tensor(size[0], dims, dims).uniform_(from_, to))
         identity = torch.eye(dims).unsqueeze(0).repeat(size[0], 1, 1)
         imag_part = identity + perturbation

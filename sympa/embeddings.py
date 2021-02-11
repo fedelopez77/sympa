@@ -22,7 +22,7 @@ class Embeddings(nn.Module, abc.ABC):
         """
         super().__init__()
         self.num_embeddings = num_embeddings
-        self.embedding_dim = dims
+        self.dims = dims
         self.manifold = manifold
         self.embeds = gt.ManifoldParameter(_embeds, manifold=self.manifold)
 
@@ -97,16 +97,16 @@ def get_euclidean_manifold(dims): return gt.Euclidean(1)
 def get_poincare_manifold(dims): return gt.PoincareBall()
 def get_lorentz_manifold(dims): return gt.Lorentz()
 def get_sphere_manifold(dims): return gt.Sphere()
-def get_upper_manifold(dims): return UpperHalfManifold(dim=dims, metric=Metric.RIEMANNIAN.value)
-def get_upper_fone_manifold(dims): return UpperHalfManifold(dim=dims, metric=Metric.FINSLER_ONE.value)
-def get_upper_finf_manifold(dims): return UpperHalfManifold(dim=dims, metric=Metric.FINSLER_INFINITY.value)
-def get_upper_fmin_manifold(dims): return UpperHalfManifold(dim=dims, metric=Metric.FINSLER_MINIMUM.value)
-def get_upper_wsum_manifold(dims): return UpperHalfManifold(dim=dims, metric=Metric.WEIGHTED_SUM.value)
-def get_bounded_manifold(dims): return BoundedDomainManifold(dim=dims, metric=Metric.RIEMANNIAN.value)
-def get_bounded_fone_manifold(dims): return BoundedDomainManifold(dim=dims, metric=Metric.FINSLER_ONE.value)
-def get_bounded_finf_manifold(dims): return BoundedDomainManifold(dim=dims, metric=Metric.FINSLER_INFINITY.value)
-def get_bounded_fmin_manifold(dims): return BoundedDomainManifold(dim=dims, metric=Metric.FINSLER_MINIMUM.value)
-def get_bounded_wsum_manifold(dims): return BoundedDomainManifold(dim=dims, metric=Metric.WEIGHTED_SUM.value)
+def get_upper_manifold(dims): return UpperHalfManifold(dims=dims, metric=Metric.RIEMANNIAN.value)
+def get_upper_fone_manifold(dims): return UpperHalfManifold(dims=dims, metric=Metric.FINSLER_ONE.value)
+def get_upper_finf_manifold(dims): return UpperHalfManifold(dims=dims, metric=Metric.FINSLER_INFINITY.value)
+def get_upper_fmin_manifold(dims): return UpperHalfManifold(dims=dims, metric=Metric.FINSLER_MINIMUM.value)
+def get_upper_wsum_manifold(dims): return UpperHalfManifold(dims=dims, metric=Metric.WEIGHTED_SUM.value)
+def get_bounded_manifold(dims): return BoundedDomainManifold(dims=dims, metric=Metric.RIEMANNIAN.value)
+def get_bounded_fone_manifold(dims): return BoundedDomainManifold(dims=dims, metric=Metric.FINSLER_ONE.value)
+def get_bounded_finf_manifold(dims): return BoundedDomainManifold(dims=dims, metric=Metric.FINSLER_INFINITY.value)
+def get_bounded_fmin_manifold(dims): return BoundedDomainManifold(dims=dims, metric=Metric.FINSLER_MINIMUM.value)
+def get_bounded_wsum_manifold(dims): return BoundedDomainManifold(dims=dims, metric=Metric.WEIGHTED_SUM.value)
 def get_spd(dims): return SymmetricPositiveDefinite()
 
 

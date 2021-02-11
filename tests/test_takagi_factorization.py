@@ -1,6 +1,6 @@
 import torch
 import unittest
-import sympa.math.compsym_math as sm
+import sympa.math.csym_math as sm
 from sympa.math.takagi_factorization import TakagiFactorization
 import sympa.tests
 from tests.utils import get_random_symmetric_matrices

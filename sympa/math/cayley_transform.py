@@ -3,7 +3,7 @@
 # to the Upper Half Space Model.
 # See https://en.wikipedia.org/wiki/Cayley_transform
 
-from sympa.math import compsym_math as sm
+from sympa.math import csym_math as sm
 import torch
 
 
