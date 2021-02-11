@@ -5,7 +5,7 @@ from sympa import config
 import geoopt as gt
 from geoopt.manifolds.symmetric_positive_definite import SymmetricPositiveDefinite
 from sympa.manifolds.metric import Metric
-from sympa.manifolds import BoundedDomainManifold, UpperHalfManifold
+from sympa.manifolds import BoundedDomainManifold, UpperHalfManifold, CompactDualManifold
 
 
 class Embeddings(nn.Module, abc.ABC):
@@ -107,6 +107,11 @@ def get_bounded_fone_manifold(dims): return BoundedDomainManifold(dims=dims, met
 def get_bounded_finf_manifold(dims): return BoundedDomainManifold(dims=dims, metric=Metric.FINSLER_INFINITY.value)
 def get_bounded_fmin_manifold(dims): return BoundedDomainManifold(dims=dims, metric=Metric.FINSLER_MINIMUM.value)
 def get_bounded_wsum_manifold(dims): return BoundedDomainManifold(dims=dims, metric=Metric.WEIGHTED_SUM.value)
+def get_dual_manifold(dims): return CompactDualManifold(dims, metric=Metric.RIEMANNIAN.value)
+def get_dual_fone_manifold(dims): return CompactDualManifold(dims, metric=Metric.FINSLER_ONE.value)
+def get_dual_finf_manifold(dims): return CompactDualManifold(dims, metric=Metric.FINSLER_INFINITY.value)
+def get_dual_fmin_manifold(dims): return CompactDualManifold(dims, metric=Metric.FINSLER_MINIMUM.value)
+def get_dual_wsum_manifold(dims): return CompactDualManifold(dims, metric=Metric.WEIGHTED_SUM.value)
 def get_spd(dims): return SymmetricPositiveDefinite()
 
 
@@ -147,6 +152,11 @@ class ManifoldBuilder:
         "bounded-finf": get_bounded_finf_manifold,
         "bounded-fmin": get_bounded_fmin_manifold,
         "bounded-wsum": get_bounded_wsum_manifold,
+        "dual": get_dual_manifold,
+        "dual-fone": get_dual_fone_manifold,
+        "dual-finf": get_dual_finf_manifold,
+        "dual-fmin": get_dual_fmin_manifold,
+        "dual-wsum": get_dual_wsum_manifold,
         "spd": get_spd
     }
 
@@ -163,7 +173,7 @@ class EmbeddingsBuilder:
 
     @classmethod
     def _get_table(cls, model_name: str):
-        if "upper" in model_name or "bounded" in model_name or "spd" in model_name:
+        if "upper" in model_name or "bounded" in model_name or "dual" in model_name or "spd" in model_name:
             return MatrixEmbeddings
         if model_name in {"euclidean", "poincare", "lorentz", "sphere", "prod-hysph", "prod-hyhy", "prod-hyeu"}:
             return VectorEmbeddings

@@ -71,18 +71,20 @@ class SiegelManifold(Manifold, ABC):
     name = "Siegel Space"
     __scaling__ = Manifold.__scaling__.copy()
 
-    def __init__(self, dims=2, ndim=2, metric=Metric.RIEMANNIAN.value):
+    def __init__(self, dims=2, ndim=2, metric=Metric.RIEMANNIAN.value, use_xitorch=False):
         """
-        Space of symmetric matrices of shape dim x dim
+        Space of symmetric matrices of shape dims x dims
 
         :param dims: dimensions of the matrices
         :param ndim: number of dimensions of tensors. This parameter is not used in this class and
         it is kept for compatibility with Manifold base class
+        :param metric: metric function to apply for measuring distances. It has to be a Metric value
+        :param use_xitorch: if True it uses sm.xitorch_symeig. If False it uses sm.symeig.
         """
         super().__init__()
         self.dims = dims
         self.ndim = ndim
-        self.takagi_factorization = TakagiFactorization(dims)
+        self.takagi_factorization = TakagiFactorization(dims, use_xitorch=use_xitorch)
         self.projected_points = 0
         if metric == Metric.RIEMANNIAN.value:
             self.compute_metric = compute_riemannian_metric

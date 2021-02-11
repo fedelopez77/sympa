@@ -11,7 +11,7 @@ class Model(nn.Module):
         self.embeddings = EmbeddingsBuilder.get_embeddings(args.model, args.num_points, args.dims, self.manifold)
         self.scale_coef = args.scale_coef
         self.scale = torch.nn.Parameter(torch.Tensor([self.scale_coef * args.scale_init]),
-                                        requires_grad=args.train_scale == 1)
+                                        requires_grad=args.train_scale)
 
     def forward(self, input_triplet):
         """

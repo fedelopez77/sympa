@@ -70,8 +70,7 @@ class BoundedDomainManifold(SiegelManifold):
         eigenvalues, s = self.takagi_factorization.factorize(z)
         eigenvalues_tilde = torch.clamp(eigenvalues, max=1 - sm.EPS[z.dtype])
 
-        diag_tilde = torch.diag_embed(eigenvalues_tilde)
-        diag_tilde = sm.stick(diag_tilde, torch.zeros_like(diag_tilde))
+        diag_tilde = sm.diag_embed(eigenvalues_tilde)
 
         z_tilde = sm.bmm3(sm.conjugate(s), diag_tilde, sm.conj_trans(s))
 

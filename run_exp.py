@@ -21,8 +21,8 @@ MODEL="$py_model"
 DIMS=$py_dim
 PREP="$py_prep"
 RESULTS_FILE="out/$${MODEL}$${DIMS}d-$${PREP}"
-BATCH_SIZES=(2048 512 128)
-LRS=(1e-2 2e-3)
+BATCH_SIZES=(2048 512)
+LRS=(1e-2 1e-3)
 MAX_GRADS=(10 50 250)
 SEED=$$RANDOM
 
@@ -62,7 +62,7 @@ for BS in $${BATCH_SIZES[@]};
                 --model=$$MODEL \\
                 --dims=$$DIMS \\
                 --learning_rate=$$LR \\
-                --val_every=50 \\
+                --val_every=25 \\
                 --patience=50 \\
                 --max_grad_norm=$$MGN \\
                 --batch_size=$$BS \\
@@ -84,15 +84,15 @@ from datetime import datetime
 if __name__ == '__main__':
     template = Template(SCRIPT)
 
-    partition = "cascade"
+    partition = "skylake"
     nprocs = 10
-    models = ["bounded", "upper", "bounded-fone"]
-    dims = [3]
-    #preps = ["tree3-5", "grid3d-125", "grid4d-256"]
+    models = ["dual", "dual-finf", "dual-fone", "bounded", "bounded-fone", "bounded-finf", "upper", "upper-fone", "upper-finf"]
+    dims = [3, 4]
+    preps = ["tree3-3", "grid2d-36"] # "grid4d-625"]
     #preps = ["prod-cart-treegrid2d", "prod-cart-treetree", "usca312"]
     #preps = ["prod-root-treegrids16-2-4", "prod-root-gridtrees9-2-5", "bio-diseasome"]
-    preps = ["facebook"]
-    runs = [1]
+    # preps = ["facebook"]
+    runs = [1, 2, 3]
     timestamp = str(datetime.now().strftime("%Y%m%d%H%M%S"))
 
     for i, (model, dim, prep, run) in enumerate(itertools.product(models, dims, preps, runs)):

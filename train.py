@@ -17,24 +17,26 @@ def config_parser(parser):
     parser.add_argument("--data", required=True, type=str, help="Name of prep folder")
     parser.add_argument("--run_id", required=True, type=str, help="Name of model/run to export")
     # Model
-    parser.add_argument("--model", default="bounded", type=str, help="Model type: 'euclidean', upper-fone, etc.")
+    parser.add_argument("--model", default="upper", type=str, help="Model type: 'euclidean', upper-fone, etc.")
     parser.add_argument("--dims", default=3, type=int, help="Dimensions for the model.")
     parser.add_argument("--scale_init", default=1, type=float, help="Value to init scale.")
     parser.add_argument("--scale_coef", default=1, type=float, help="Coefficient to divide scale.")
-    parser.add_argument("--train_scale", default=0, type=int, help="Whether to train scaling or not.")
+    parser.add_argument("--train_scale", dest='train_scale', action='store_true', default=False,
+                        help="Whether to train scaling or not.")
     # optim and config
     parser.add_argument("--learning_rate", default=1e-2, type=float, help="Starting learning rate.")
     parser.add_argument("--reduce_factor", default=5, type=float, help="Factor to reduce lr on plateau.")
     parser.add_argument("--weight_decay", default=0.00, type=float, help="L2 Regularization.")
     parser.add_argument("--val_every", default=5, type=int, help="Runs validation every n epochs.")
-    parser.add_argument("--patience", default=25, type=int, help="Epochs of patience for scheduler and early stop.")
+    parser.add_argument("--patience", default=50, type=int, help="Epochs of patience for scheduler and early stop.")
     parser.add_argument("--max_grad_norm", default=50.0, type=float, help="Max gradient norm.")
     parser.add_argument("--batch_size", default=1000, type=int, help="Batch size.")
-    parser.add_argument("--epochs", default=100, type=int, help="Number of training epochs.")
+    parser.add_argument("--epochs", default=1000, type=int, help="Number of training epochs.")
     parser.add_argument("--burnin", default=10, type=int, help="Number of initial epochs to train with reduce lr.")
     parser.add_argument("--grad_accum_steps", default=1, type=int,
                         help="Number of update steps to acum before backward.")
-    parser.add_argument("--scale_triplets", default=0, type=int, help="Whether to apply scaling to triplets or not")
+    parser.add_argument("--scale_triplets", dest='scale_triplets', action='store_true', default=False,
+                        help="Whether to apply scaling to triplets or not")
     parser.add_argument("--subsample", default=-1, type=float, help="Subsamples the % of closest triplets")
 
     # Others
@@ -45,6 +47,7 @@ def config_parser(parser):
     parser.add_argument("--results_file", default="out/results.csv", type=str, help="Exports final results to this file")
     parser.add_argument("--save_epochs", default=10001, type=int, help="Exports every n epochs")
     parser.add_argument("--seed", default=42, type=int, help="Seed")
+    parser.add_argument("--debug", dest='debug', action='store_true', default=False, help="Debug mode")
 
 
 def get_model(args):
@@ -74,7 +77,7 @@ def load_training_data(args, log):
     else:
         sub_triplets = all_triplets
 
-    if args.scale_triplets == 1:
+    if args.scale_triplets:
         all_triplets = scale_triplets(all_triplets)
         sub_triplets = scale_triplets(sub_triplets)
 
@@ -105,6 +108,8 @@ def main():
     parser = argparse.ArgumentParser("train.py")
     config_parser(parser)
     args = parser.parse_args()
+    torch.autograd.set_detect_anomaly(args.debug)
+
     # sets random seed
     seed = args.seed if args.seed > 0 else random.randint(1, 1000000)
     set_seed(seed)

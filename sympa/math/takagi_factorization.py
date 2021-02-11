@@ -16,15 +16,21 @@ class TakagiFactorization:
         Ŝ: S conjugate
         S^*: S conjugate transpose
     """
-    def __init__(self, matrix_rank):
+    def __init__(self, matrix_rank, use_xitorch=False):
+        """
+        :param matrix_rank:
+        :param use_xitorch: if True it uses sm.xitorch_symeig to find eigenvectors and
+        eigenvalues of a matrix. If False it uses sm.symeig.
+        """
         self.rank = matrix_rank
         self.eigvalues_idx = torch.arange(start=0, end=2 * matrix_rank, step=2, dtype=torch.long, device=DEVICE)
         self.zero = torch.Tensor(0).to(DEVICE)
+        self.symeig = sm.xitorch_symeig if use_xitorch else sm.symeig
 
     def factorize(self, a: torch.Tensor):
         """
         Given A ('a') square, complex, symmetric matrix.
-        Calculates factorization A = Ŝ D S^*
+        Calculates factorization such that A = Ŝ D S^*
          - D is a real nonnegative diagonal matrix
          - S is unitary
          - Ŝ: S conjugate
@@ -32,7 +38,7 @@ class TakagiFactorization:
 
         See https://en.wikipedia.org/wiki/Matrix_decomposition#Takagi's_factorization
 
-        Returns 'eigenvalues' (elements of D) and V as 'eigenvectors'
+        Returns 'eigenvalues' (elements of D) and S as 'eigenvectors'
 
         :param a: b x 2 x n x n. PRE: Each matrix must be symmetric
         :return: eigenvalues: b x n, eigenvectors: b x 2 x n x n
@@ -73,15 +79,14 @@ class TakagiFactorization:
         a_star_a = sm.bmm(a_star, a)
         a_star_a_2n = sm.to_compound_real_symmetric_from_hermitian(a_star_a)        # b x 2n x 2n
 
-        eigenvalues, eigenvectors = sm.symeig(a_star_a_2n)              # b x 2n; b x 2n x 2n
+        eigenvalues, eigenvectors = self.symeig(a_star_a_2n)              # b x 2n; b x 2n x 2n
 
         eigenvalues, desc_indices = torch.sort(eigenvalues, dim=-1, descending=True)
 
         # chooses one eigenvalue for every pair since they are repeated
         z_eigenvalues = eigenvalues.index_select(index=self.eigvalues_idx, dim=-1)
         # builds diagonal matrix with eigenvalues, without repetition
-        diagonal = torch.diag_embed(z_eigenvalues)
-        diagonal = sm.stick(diagonal, torch.zeros_like(diagonal))
+        diagonal = sm.diag_embed(z_eigenvalues)
 
         # if all eigenvalues equal 1, the input was the identity and we do not need to reorder the eigenvalues
         if torch.any(z_eigenvalues != 1):
@@ -152,7 +157,7 @@ class TakagiFactorization:
         real_w = sm.squared_to_symmetric(real_w)
 
         # diagonalize Re(W)
-        real_b, real_z2 = torch.symeig(real_w, eigenvectors=True)               # real_b: b x n, z2: b x n x n
+        real_b, real_z2 = self.symeig(real_w)               # real_b: b x n, z2: b x n x n
 
         # assert that real_z2 is orthogonal: it checks only on the first and last pairs of tensors for simplicity
         assert torch.allclose(torch.sum(real_z2[:, :, 0] * real_z2[:, :, 1]), self.zero)

@@ -138,6 +138,17 @@ def to_symmetric(y: torch.Tensor):
     return stick(real_sym, imag_sym)
 
 
+def diag_embed(d: torch.Tensor):
+    """
+    Set the n values in d, as the real main diagonal of a n x n matrix.
+    The imaginary part is set to zero.
+    :param d: b x n
+    :return: b x 2 x n x n
+    """
+    d = torch.diag_embed(d)
+    return stick(d, torch.zeros_like(d))
+
+
 def is_complex_symmetric(x: torch.Tensor, atol=1e-05, rtol=1e-5):
     """
     Returns whether the complex symmetric matrices are symmetric or not
@@ -244,7 +255,32 @@ def symeig(y: torch.Tensor):
     :return: eigenvalues (in ascending order): b x * x n
     :return: eigenvectors: b x * x n x n
     """
-    eigenvalues, eigenvectors = torch.symeig(y, eigenvectors=True)                  # evalues are in ascending order
+    eigenvalues, eigenvectors = torch.symeig(y, eigenvectors=True)      # evalues are in ascending order
+    return eigenvalues, eigenvectors
+
+
+def xitorch_symeig(y: torch.Tensor):
+    """
+    Idem symeig but using xitorch.
+    This is done in this way since according to pytorch documentation for symeig
+    (https://pytorch.org/docs/stable/generated/torch.symeig.html):
+        Extra care needs to be taken when backward through outputs.
+        Such operation is really only stable when all eigenvalues are distinct.
+        Otherwise, NaN can appear as the gradients are not properly defined.
+
+    Therefore, the xitorch implementation has a workaround to deal with degenerate
+    matrices (matrices with repeated eigenvalues) in the backward pass.
+
+    :param y: b x * x n x n. PRE: Each matrix must be symmetric
+    :return: eigenvalues (in ascending order): b x * x n
+    :return: eigenvectors: b x * x n x n
+    """
+    import xitorch
+    from xitorch.linalg import symeig as xit_symeig_op
+    linop = xitorch.LinearOperator.m(y)
+    eigenvalues, eigenvectors = xit_symeig_op(linop,
+                                              bck_optioins={"degen_atol": 1e-22, "degen_rtol": 1e-22},
+                                              neig=y.shape[-1], method="custom_exacteig", max_niter=1000)
     return eigenvalues, eigenvectors
 
 
