@@ -17,7 +17,7 @@ class CompactDualManifold(SiegelManifold):
     name = "Compact Dual"
     __scaling__ = Manifold.__scaling__.copy()
 
-    def __init__(self, dims=2, ndim=2, metric=MetricType.RIEMANNIAN.value):
+    def __init__(self, dims=2, ndim=2, metric=MetricType.RIEMANNIAN):
         # Sets use_xitorch to True due to instabilities in the gradient
         super().__init__(dims=dims, ndim=ndim, metric=metric, use_xitorch=True)
 
@@ -58,7 +58,7 @@ class CompactDualManifold(SiegelManifold):
         d, s = self.takagi_factorization.factorize(y)   # d = b x n
 
         d = torch.atan(d)
-        dist = self.compute_metric(d)
+        dist = self.metric.compute_metric(d)
         return dist
 
     def egrad2rgrad(self, z: torch.Tensor, u: torch.Tensor) -> torch.Tensor:

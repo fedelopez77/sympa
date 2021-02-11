@@ -77,6 +77,11 @@ class FinslerInfinityMetric(Metric):
 
 class FinslerMinimumEntropyMetric(Metric):
 
+    def __init__(self, dims: int):
+        super().__init__(dims)
+        factor = 2
+        self.weights = factor * (dims + 1 - torch.arange(start=1, end=dims + 1).unsqueeze(0))
+
     def compute_metric(self, v: torch.Tensor) -> torch.Tensor:
         """
         Given v_i = log((1 + d_i) / (1 - d_i)), with d_i the eigenvalues of the crossratio matrix,
@@ -85,10 +90,7 @@ class FinslerMinimumEntropyMetric(Metric):
         :param v: b x n: v_i = log((1 + d_i) / (1 - d_i)), with d_i the eigenvalues of the crossratio matrix,
         :return: b x 1: Finsler distance
         """
-        n = v.shape[-1]
-        factor = 2
-        weights = factor * (n + 1 - torch.arange(start=1, end=n + 1).unsqueeze(0))
-        res = torch.sum(weights * v, dim=-1)
+        res = torch.sum(self.weights * v, dim=-1)
         return res
 
 
