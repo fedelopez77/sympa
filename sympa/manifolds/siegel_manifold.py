@@ -3,59 +3,9 @@ from typing import Union, Tuple, Optional
 import torch
 from geoopt.manifolds.base import Manifold
 from sympa.math import csym_math as sm
-from sympa.manifolds.metric import Metric
+from sympa.manifolds.metrics import Metric, MetricType
 from sympa.math.cayley_transform import cayley_transform
 from sympa.math.takagi_factorization import TakagiFactorization
-
-
-def compute_finsler_metric_one(d: torch.Tensor) -> torch.Tensor:
-    """
-    Given d_i = log((1 + r_i) / (1 - r_i)), with r_i the eigenvalues of the crossratio matrix,
-    the Finsler distance one (F_{1})is given by the summation of this values
-    :param d: b x n: d_i = log((1 + r_i) / (1 - r_i)), with r_i the eigenvalues of the crossratio matrix,
-    :return: b x 1: Finsler distance
-    """
-    res = torch.sum(d, dim=-1)
-    return res
-
-
-def compute_finsler_metric_infinity(d: torch.Tensor) -> torch.Tensor:
-    """
-    The Finsler distance infinity (F_{\infty}) is given by d_n = log((1 + r_n) / (1 - r_n)),
-    with r_n the largest eigenvalues of the crossratio matrix,
-    :param d: b x n: d_i = log((1 + r_i) / (1 - r_i)), with r_i the eigenvalues of the crossratio matrix,
-            where r_0 the largest eigenvalue and r_{n-1} the smallest
-    :return: b x 1: Finsler distance
-    """
-    res = d[:, 0]
-    return res
-
-
-def compute_finsler_metric_minimum(d: torch.Tensor) -> torch.Tensor:
-    """
-    Given d_i = log((1 + r_i) / (1 - r_i)), with r_i the eigenvalues of the crossratio matrix,
-    the Finsler distance of minimum entropy (F_{min})is given by the summation of the weighted values
-    \sum  2 * (n + 1 - i) * r_i
-    :param d: b x n: d_i = log((1 + r_i) / (1 - r_i)), with r_i the eigenvalues of the crossratio matrix,
-    :return: b x 1: Finsler distance
-    """
-    n = d.shape[-1]
-    factor = 2
-    weights = factor * (n + 1 - torch.arange(start=1, end=n + 1).unsqueeze(0))
-    res = torch.sum(weights * d, dim=-1)
-    return res
-
-
-def compute_riemannian_metric(d: torch.Tensor) -> torch.Tensor:
-    """
-    Given d_i = log((1 + r_i) / (1 - r_i)), with r_i the eigenvalues of the crossratio matrix,
-    the Riemannian distance is given by the summation of this values
-    :param d: b x n: d_i = log((1 + r_i) / (1 - r_i)), with r_i the eigenvalues of the crossratio matrix,
-    :return: b x 1: Riemannian distance
-    """
-    res = torch.sum(d**2, dim=-1)
-    res = torch.sqrt(res)
-    return res
 
 
 class SiegelManifold(Manifold, ABC):
@@ -71,7 +21,7 @@ class SiegelManifold(Manifold, ABC):
     name = "Siegel Space"
     __scaling__ = Manifold.__scaling__.copy()
 
-    def __init__(self, dims=2, ndim=2, metric=Metric.RIEMANNIAN.value, use_xitorch=False):
+    def __init__(self, dims=2, ndim=2, metric=MetricType.RIEMANNIAN, use_xitorch=False):
         """
         Space of symmetric matrices of shape dims x dims
 
@@ -84,27 +34,15 @@ class SiegelManifold(Manifold, ABC):
         super().__init__()
         self.dims = dims
         self.ndim = ndim
-        self.takagi_factorization = TakagiFactorization(dims, use_xitorch=use_xitorch)
         self.projected_points = 0
-        if metric == Metric.RIEMANNIAN.value:
-            self.compute_metric = compute_riemannian_metric
-        elif metric == Metric.FINSLER_ONE.value:
-            self.compute_metric = compute_finsler_metric_one
-        elif metric == Metric.FINSLER_INFINITY.value:
-            self.compute_metric = compute_finsler_metric_infinity
-        elif metric == Metric.FINSLER_MINIMUM.value:
-            self.compute_metric = compute_finsler_metric_minimum
-        elif metric == Metric.WEIGHTED_SUM.value:
-            self.compute_metric = self.compute_weighted_sum
-            self.weights = torch.nn.parameter.Parameter(torch.ones((1, self.dims)))
-        else:
-            raise ValueError(f"Unrecognized metric: {metric}")
+        self.takagi_factorization = TakagiFactorization(dims, use_xitorch=use_xitorch)
+        self.metric = Metric.get(metric, self.dims)
 
     def dist(self, z1: torch.Tensor, z2: torch.Tensor, *, keepdim=False) -> torch.Tensor:
         """
-        This methods calculates the distance for the Upper Half Space Manifold (UHSM)
-        It is implemented here since the way to calculate distances in the Bounded Domain Manifold requires mapping
-        the points to the UHSM, and then applying this formula.
+        Calculates the distance for the Upper Half Space Manifold (UHSM)
+        It is implemented here since the way to calculate distances in the Bounded Domain Manifold
+        requires mapping the points to the UHSM, and then applying this formula.
 
         :param z1, z2: b x 2 x n x n: elements in the UHSM
         :param keepdim:
@@ -126,23 +64,10 @@ class SiegelManifold(Manifold, ABC):
         assert torch.all(eigvalues >= 0 - eps), f"Eigenvalues: {eigvalues}"
         assert torch.all(eigvalues <= 1.01), f"Eigenvalues: {eigvalues}"
 
-        # di = (1 + ri) / (1 - ri)
-        d = (1 + eigvalues) / (1 - eigvalues).clamp(min=eps)
-        d = torch.log(d)
-        res = self.compute_metric(d)
-        return res
-
-    def compute_weighted_sum(self, d: torch.Tensor) -> torch.Tensor:
-        """
-        Given d_i = log((1 + r_i) / (1 - r_i)), with r_i the eigenvalues of the crossratio matrix,
-        we learn weights for each eigenvalue and apply a weighted average such that:
-        distance = \sum  w_i * r_i
-        :param d: b x n: d_i = log((1 + r_i) / (1 - r_i)), with r_i the eigenvalues of the crossratio matrix,
-        :return: b x 1: Finsler distance
-        """
-        weights = torch.nn.functional.relu(self.weights)    # 1 x n
-        res = weights * d
-        res = torch.sum(res, dim=-1)
+        # vi = (1 + di) / (1 - di)
+        v = (1 + eigvalues) / (1 - eigvalues).clamp(min=eps)
+        v = torch.log(v)
+        res = self.metric.compute_metric(v)
         return res
 
     def retr(self, x: torch.Tensor, u: torch.Tensor) -> torch.Tensor:

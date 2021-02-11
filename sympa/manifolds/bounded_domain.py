@@ -2,7 +2,7 @@ import torch
 from geoopt.manifolds.base import Manifold
 from sympa.manifolds import SiegelManifold
 from sympa.manifolds.upper_half import UpperHalfManifold
-from sympa.manifolds.metric import Metric
+from sympa.manifolds.metrics import MetricType
 from sympa.math import csym_math as sm
 from sympa.math.cayley_transform import cayley_transform, inverse_cayley_transform
 
@@ -21,7 +21,7 @@ class BoundedDomainManifold(SiegelManifold):
     name = "Bounded Domain"
     __scaling__ = Manifold.__scaling__.copy()
 
-    def __init__(self, dims=2, ndim=2, metric=Metric.RIEMANNIAN.value):
+    def __init__(self, dims=2, ndim=2, metric=MetricType.RIEMANNIAN):
         super().__init__(dims=dims, ndim=ndim, metric=metric)
 
     def dist(self, z1: torch.Tensor, z2: torch.Tensor, *, keepdim=False) -> torch.Tensor:

@@ -4,7 +4,7 @@ import torch.nn as nn
 from sympa import config
 import geoopt as gt
 from geoopt.manifolds.symmetric_positive_definite import SymmetricPositiveDefinite
-from sympa.manifolds.metric import Metric
+from sympa.manifolds.metrics import MetricType
 from sympa.manifolds import BoundedDomainManifold, UpperHalfManifold, CompactDualManifold
 
 
@@ -97,21 +97,21 @@ def get_euclidean_manifold(dims): return gt.Euclidean(1)
 def get_poincare_manifold(dims): return gt.PoincareBall()
 def get_lorentz_manifold(dims): return gt.Lorentz()
 def get_sphere_manifold(dims): return gt.Sphere()
-def get_upper_manifold(dims): return UpperHalfManifold(dims=dims, metric=Metric.RIEMANNIAN.value)
-def get_upper_fone_manifold(dims): return UpperHalfManifold(dims=dims, metric=Metric.FINSLER_ONE.value)
-def get_upper_finf_manifold(dims): return UpperHalfManifold(dims=dims, metric=Metric.FINSLER_INFINITY.value)
-def get_upper_fmin_manifold(dims): return UpperHalfManifold(dims=dims, metric=Metric.FINSLER_MINIMUM.value)
-def get_upper_wsum_manifold(dims): return UpperHalfManifold(dims=dims, metric=Metric.WEIGHTED_SUM.value)
-def get_bounded_manifold(dims): return BoundedDomainManifold(dims=dims, metric=Metric.RIEMANNIAN.value)
-def get_bounded_fone_manifold(dims): return BoundedDomainManifold(dims=dims, metric=Metric.FINSLER_ONE.value)
-def get_bounded_finf_manifold(dims): return BoundedDomainManifold(dims=dims, metric=Metric.FINSLER_INFINITY.value)
-def get_bounded_fmin_manifold(dims): return BoundedDomainManifold(dims=dims, metric=Metric.FINSLER_MINIMUM.value)
-def get_bounded_wsum_manifold(dims): return BoundedDomainManifold(dims=dims, metric=Metric.WEIGHTED_SUM.value)
-def get_dual_manifold(dims): return CompactDualManifold(dims, metric=Metric.RIEMANNIAN.value)
-def get_dual_fone_manifold(dims): return CompactDualManifold(dims, metric=Metric.FINSLER_ONE.value)
-def get_dual_finf_manifold(dims): return CompactDualManifold(dims, metric=Metric.FINSLER_INFINITY.value)
-def get_dual_fmin_manifold(dims): return CompactDualManifold(dims, metric=Metric.FINSLER_MINIMUM.value)
-def get_dual_wsum_manifold(dims): return CompactDualManifold(dims, metric=Metric.WEIGHTED_SUM.value)
+def get_upper_manifold(dims): return UpperHalfManifold(dims=dims, metric=MetricType.RIEMANNIAN)
+def get_upper_fone_manifold(dims): return UpperHalfManifold(dims=dims, metric=MetricType.FINSLER_ONE)
+def get_upper_finf_manifold(dims): return UpperHalfManifold(dims=dims, metric=MetricType.FINSLER_INFINITY)
+def get_upper_fmin_manifold(dims): return UpperHalfManifold(dims=dims, metric=MetricType.FINSLER_MINIMUM)
+def get_upper_wsum_manifold(dims): return UpperHalfManifold(dims=dims, metric=MetricType.WEIGHTED_SUM)
+def get_bounded_manifold(dims): return BoundedDomainManifold(dims=dims, metric=MetricType.RIEMANNIAN)
+def get_bounded_fone_manifold(dims): return BoundedDomainManifold(dims=dims, metric=MetricType.FINSLER_ONE)
+def get_bounded_finf_manifold(dims): return BoundedDomainManifold(dims=dims, metric=MetricType.FINSLER_INFINITY)
+def get_bounded_fmin_manifold(dims): return BoundedDomainManifold(dims=dims, metric=MetricType.FINSLER_MINIMUM)
+def get_bounded_wsum_manifold(dims): return BoundedDomainManifold(dims=dims, metric=MetricType.WEIGHTED_SUM)
+def get_dual_manifold(dims): return CompactDualManifold(dims, metric=MetricType.RIEMANNIAN)
+def get_dual_fone_manifold(dims): return CompactDualManifold(dims, metric=MetricType.FINSLER_ONE)
+def get_dual_finf_manifold(dims): return CompactDualManifold(dims, metric=MetricType.FINSLER_INFINITY)
+def get_dual_fmin_manifold(dims): return CompactDualManifold(dims, metric=MetricType.FINSLER_MINIMUM)
+def get_dual_wsum_manifold(dims): return CompactDualManifold(dims, metric=MetricType.WEIGHTED_SUM)
 def get_spd(dims): return SymmetricPositiveDefinite()
 
 
