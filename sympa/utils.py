@@ -54,6 +54,10 @@ def assert_all_close(a, b, factor=1):
     return torch.all((a - b).abs() < EPS[torch.float32] * factor)
 
 
+def assert_close(a, b, factor=1):
+    return (a - b).abs() < EPS[torch.float32] * factor
+
+
 def write_results_to_file(results_file: str, results_data: dict):
     results_data["timestamp"] = [datetime.now().strftime("%Y%m%d%H%M%S")]
     file = Path(results_file)

@@ -2,7 +2,7 @@
 import torch
 from sympa.config import DEVICE
 import sympa.math.csym_math as sm
-from sympa.utils import row_sort, assert_all_close, get_logging
+from sympa.utils import row_sort, assert_all_close, get_logging, assert_close
 
 log = get_logging()
 
@@ -23,7 +23,7 @@ class TakagiFactorization:
         eigenvalues of a matrix. If False it uses sm.symeig.
         """
         self.rank = matrix_rank
-        self.eigvalues_idx = torch.arange(start=0, end=2 * matrix_rank, step=2, dtype=torch.long, device=DEVICE)
+        self.even_idx = torch.arange(start=0, end=2 * matrix_rank, step=2, dtype=torch.long, device=DEVICE)
         self.zero = torch.Tensor(0).to(DEVICE)
         self.symeig = sm.xitorch_symeig if use_xitorch else sm.symeig
 
@@ -81,18 +81,19 @@ class TakagiFactorization:
 
         eigenvalues, eigenvectors = self.symeig(a_star_a_2n)              # b x 2n; b x 2n x 2n
 
-        eigenvalues, desc_indices = torch.sort(eigenvalues, dim=-1, descending=True)
+        # if all eigenvalues equal 1, the input was the identity and we do not need to reorder anything
+        if torch.any(eigenvalues != 1):
+            eigenvalues, eigenvectors = eigenvalues.flip(-1), eigenvectors.flip(-1)  # sets them in descending order
+
+            # reorders eigenvectors due to repetitions
+            eigenvectors = self.reorder_eigenvectors(eigenvectors)
+            eigenvectors = eigenvectors.transpose(-1, -2)
 
         # chooses one eigenvalue for every pair since they are repeated
-        z_eigenvalues = eigenvalues.index_select(index=self.eigvalues_idx, dim=-1)
+        z_eigenvalues = eigenvalues.index_select(index=self.even_idx, dim=-1)
         # builds diagonal matrix with eigenvalues, without repetition
         diagonal = sm.diag_embed(z_eigenvalues)
 
-        # if all eigenvalues equal 1, the input was the identity and we do not need to reorder the eigenvalues
-        if torch.any(z_eigenvalues != 1):
-            # reorders eigenvectors due to repetitions
-            eigenvectors = self.reorder_eigenvectors(eigenvectors, desc_indices)
-            eigenvectors = eigenvectors.transpose(-1, -2)
         z1 = sm.to_hermitian_from_compound_real_symmetric(eigenvectors)
 
         # asserts: A^* A = Z1^* D Z1
@@ -100,39 +101,46 @@ class TakagiFactorization:
 
         return z1, z_eigenvalues, diagonal
 
-    def reorder_eigenvectors(self, eigenvectors, desc_indices):
+    def reorder_eigenvectors(self, eigenvectors):
         """
         Eigenvectors are repeated according to eigenvalues, so they must be reordered.
         The final matrix should have a block shape of:
         [Z1] =  [[(Re(Z1), -Im(Z1)],
                  [(Im(Z1),  Re(Z1)]]
+        Given the repeated eigenvalues, the eigenvectors are given as column vectors
+        of the form: eigvecs = [v1, v1', v2, v2', ..., vn, vn']
+        To fulfill the expected shape, they have to be reordered as:
+        [v1, v2, ..., vn, v1', v2',..., vn']
+        But there are cases where vi and vi' should be swapped, so we need to check
+        in which cases that swap is necessary and make it.
         :param eigenvectors: b x 2n x 2n
         :return:
         """
-        result = []
         half_elem = int(eigenvectors.size(-1) / 2)
-        for mat_idx, matrix in enumerate(eigenvectors):     # 2n x 2n. Each matrix can have a different rearrangement
-            matrix = matrix.index_select(dim=1, index=desc_indices[mat_idx])    # reorders to descending, as eigvalues
-            vecs = matrix.split(1, dim=-1)                  # list of 2n eigenvectors with vecs of 2n x 1
-            left, right = [], []
-            for i in range(0, len(vecs), 2):
-                elem_a = vecs[i][0]
-                elem_b = vecs[i + 1][half_elem]
-                if assert_all_close(elem_a, elem_b, factor=5) and ((elem_a > 0 and elem_b > 0) or (elem_a < 0 and elem_b < 0)):
-                    left.append(vecs[i])
-                    right.append(vecs[i + 1])
-                elif assert_all_close(elem_a, elem_b * -1, factor=5):  # in this case, it swaps the eigenvectors
-                    left.append(vecs[i + 1])
-                    right.append(vecs[i])
-                else:
-                    raise ValueError(f"Elements in eigenvectors are not equal. Was the original matrix symmetric?"
-                                     f"Matrix: {matrix}")
+        # chooses row 0, cols 0, 2, 4,..., 2n-2
+        # and row n/2, cols 1, 3, 5, ..., 2n-1 of all eigenvector matrices
+        first_row = eigenvectors[:, 0, self.even_idx]  # b x n
+        middle_row = eigenvectors[:, half_elem, self.even_idx + 1]  # b x n
 
-            left.extend(right)
-            reordered = torch.cat(left, dim=-1)             # 2n x 2n
-            result.append(reordered)
+        # checks which pairs need to be swapped: if first row coincides with middle row the swap is not necessary
+        values_are_all_close = assert_close(first_row, middle_row, factor=5)
+        same_sign = torch.logical_or(
+            torch.logical_and(first_row > 0, middle_row > 0),
+            torch.logical_and(first_row < 0, middle_row < 0),
+        )
+        is_correct = torch.logical_and(values_are_all_close, same_sign)  # b x n
 
-        result = torch.stack(result, dim=0)
+        result = torch.zeros_like(eigenvectors)
+        for i in range(is_correct.shape[-1]):  # iterate throw cols of is_correct
+            is_pair_correct = is_correct[:, i].unsqueeze(-1)  # b x 2
+
+            left_col_idx, right_col_idx = 2 * i, 2 * i + 1
+            left_col = torch.where(is_pair_correct, eigenvectors[:, :, left_col_idx], eigenvectors[:, :, right_col_idx])
+            right_col = torch.where(is_pair_correct, eigenvectors[:, :, right_col_idx],
+                                    eigenvectors[:, :, left_col_idx])
+            result[:, :, i] = left_col
+            result[:, :, i + half_elem] = right_col
+
         return result
 
     def _get_z2(self, a: torch.Tensor, z1: torch.Tensor):
