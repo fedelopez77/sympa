@@ -56,7 +56,7 @@ def get_graph(args):
         shape = [nodes] * dims
         grid = nx.grid_graph(dim=shape)
         tree = nx.balanced_tree(args.tree_branching, args.tree_height)
-        graph = nx.cartesian_product(tree, tree)
+        graph = nx.cartesian_product(tree, grid)
         graph.name = f"product-cartesian"
     elif args.graph == "product-rooted":
         dims = args.grid_dims
@@ -133,7 +133,7 @@ def main():
     parser.add_argument("--grid_dims", default=3, type=int, help="if --graph=grid, number of dimensions")
     parser.add_argument("--tree_branching", default=3, type=int, help="if --graph=tree, branching factor of tree")
     parser.add_argument("--tree_height", default=3, type=int, help="if --graph=tree, height of tree")
-    parser.add_argument("--plot_graph", default=0, type=int, help="Whether to generate a plot or not")
+    parser.add_argument("--plot_graph", action="store_true", default=False, help="Whether to generate a plot or not")
 
     args = parser.parse_args()
     utils.set_seed(42)
@@ -151,7 +151,7 @@ def main():
     graph = nx.convert_node_labels_to_integers(graph, ordering="sorted")
     log.info(nx.info(graph))
 
-    if args.plot_graph == 1:
+    if args.plot_graph:
         log.info("Plotting graph")
         plot_graph(graph, run_path)
 
