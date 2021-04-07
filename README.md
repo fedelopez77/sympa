@@ -1,15 +1,11 @@
 # sympa
-Graph embeddings in SYMetric sPAces
-Code for the papers ["BlaBlaBla"](link to arxiv for now) published at FooBarBaz 2049
+Embeddings graphs in **sym**etric s**pa**ces.  
+Code for the papers ["BlaBlaBla"](http://example.com/) published at FooBarBaz 2049
 
-<div class="row">
-  <div class="column">
-    <img src="img/GraphInSymSpace.jpg" style="width:100%">
-  </div>
-  <div class="column">
-    <img src="img/FinslerBalls.png" style="width:100%">
-  </div>
-</div>
+<p align="middle">
+  <img src="img/GraphInSymSpace.jpg" width="49%" />
+  <img src="img/FinslerBalls.png" width="49%" /> 
+</p>
 
 #### Available Models
 Vector models:
