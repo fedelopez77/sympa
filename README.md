@@ -1,10 +1,10 @@
 # sympa
-Embeddings graphs in **sym**etric s**pa**ces.  
-Code for the papers ["BlaBlaBla"](http://example.com/) published at FooBarBaz 2049
+Embeddings graphs in **sym**metric s**pa**ces.  
+Code for the papers ["BlaBlaBla"](http://example.com/) published at FooBarBaz 2049.
 
 <p align="middle">
-  <img src="img/GraphInSymSpace.jpg" width="49%" />
-  <img src="img/FinslerBalls.png" width="49%" /> 
+  <img src="img/GraphInSymSpace.jpg" width="30%" />
+  <img src="img/Transition.jpg" width="35%" />
 </p>
 
 #### Available Models
@@ -32,12 +32,6 @@ The last three allow different metrics
  * `fmin`: Finsler metric of minimum entropy
  * `wsum`: Learns weights for a weighted sum of the vector-valued distance
  
-## Citation
-The source code and data in this repository aims at facilitating the study of graph embeddings in symmetric spaces. 
-If you use the code/data, please cite it as follows:
-```
-Add citation
-```
 
 ## Requirements
  - Python == 3.7 
@@ -54,7 +48,7 @@ Add citation
 ### 1. Preprocess Data
 
 In all preprocessing cases, the option `--run_id=RUN_ID` is required. The data will be saved in `data/RUN_ID`.
-If `--plot_graph` is passed, a plot will be generated. This operation can take a long time if the graph is large.
+If `--plot_graph` is passed, a plot will be generated, but the plotting can take a long time if the graph is large.
 
 **Grids:**
 ```
@@ -131,3 +125,11 @@ For `model` and `metric` see [Available Models](#available-models)
 The method `inner` is implemented for both the Upper Half space and the Bounded domain model.
 With this, experiments can be run with `RiemannianAdam`.
 However, we found them to be very unstable, therefore all experiments reported in the paper were run with `RiemannianSGD`
+
+
+## Citation
+The source code and data in this repository aims at facilitating the study of graph embeddings in symmetric spaces. 
+If you use the code/data, please cite it as follows:
+```
+Add citation
+```
