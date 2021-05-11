@@ -1,6 +1,6 @@
 # sympa
 Embeddings graphs in **sym**metric s**pa**ces.  
-Code for the papers ["BlaBlaBla"](http://example.com/) published at FooBarBaz 2049.
+Code for the papers "Symmetric Spaces for Graph Embeddings: A Finsler-Riemannian Approach" published at ICML 2021.
 
 <p align="middle">
   <img src="img/GraphInSymSpace.jpg" width="30%" />
@@ -127,6 +127,11 @@ The method `inner` is implemented for both the Upper Half space and the Bounded 
 With this, experiments can be run with `RiemannianAdam`.
 However, we found them to be very unstable, therefore all experiments reported in the paper were run with `RiemannianSGD`
 
+
+## TODO
+- [ ] Fix broken tests
+- [ ] Merge branch with Recommender System experiments into master
+- [ ] Merge branch with ploting tools into master
 
 ## Citation
 The source code and data in this repository aims at facilitating the study of graph embeddings in symmetric spaces. 
