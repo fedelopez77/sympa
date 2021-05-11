@@ -35,7 +35,7 @@ class SiegelManifold(Manifold, ABC):
         self.dims = dims
         self.ndim = ndim
         self.projected_points = 0
-        self.takagi_factorization = TakagiFactorization(dims, use_xitorch=use_xitorch)
+        self.takagi_factorization = TakagiFactorization(dims, use_xitorch=use_xitorch, return_eigenvectors=False)
         self.metric = Metric.get(metric, self.dims)
 
     def dist(self, z1: torch.Tensor, z2: torch.Tensor, *, keepdim=False) -> torch.Tensor:
@@ -57,7 +57,8 @@ class SiegelManifold(Manifold, ABC):
 
         w = cayley_transform(z3)
 
-        eigvalues, eigvectors = self.takagi_factorization.factorize(w)
+        eigvalues = self.takagi_factorization.factorize(w)      # eigenvalues are in ascending order v1 < v2 < vn
+        # eigvalues = eigvalues.flip(-1)
 
         # assert 1 >= eigvalues >= 0
         eps = sm.EPS[eigvalues.dtype]

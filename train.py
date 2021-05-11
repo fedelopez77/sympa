@@ -65,9 +65,9 @@ def get_model(args):
 
 def get_optimizer(model, args):
     if args.optim == "rsgd":
-        return RiemannianSGD(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay, stabilize=10)
+        return RiemannianSGD(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay, stabilize=None)
     if args.optim == "radam":
-        return RiemannianAdam(model.parameters(), lr=args.learning_rate, eps=1e-7, stabilize=10)
+        return RiemannianAdam(model.parameters(), lr=args.learning_rate, eps=1e-7, stabilize=None)
     raise ValueError(f"Unkown --optim option: {args.optim}")
 
 

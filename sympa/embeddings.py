@@ -100,7 +100,8 @@ class EmbeddingsFactory:
     def _get_table(cls, model_name: str):
         if model_name in {"upper", "bounded", "dual", "spd"}:
             return MatrixEmbeddings
-        if model_name in {"euclidean", "poincare", "lorentz", "sphere", "prod-hysph", "prod-hyhy", "prod-hyeu"}:
+        if model_name in {"euclidean", "poincare", "lorentz", "sphere", "prod-hysph", "prod-hyhy", "prod-hyeu",
+                          "prod-sphsph"}:
             return VectorEmbeddings
         raise ValueError(f"Unrecognized embedding model: {model_name}")
 
@@ -114,6 +115,11 @@ def get_prod_hysph_manifold(dims):
 def get_prod_hyhy_manifold(dims):
     poincare = gt.PoincareBall()
     return gt.ProductManifold((poincare, dims // 2), (poincare, dims // 2))
+
+
+def get_prod_sphsph_manifold(dims):
+    sphere = gt.Sphere()
+    return gt.ProductManifold((sphere, dims // 2), (sphere, dims // 2))
 
 
 def get_prod_hyeu_manifold(dims):
@@ -132,6 +138,7 @@ class ManifoldFactory:
         "prod-hysph": get_prod_hysph_manifold,
         "prod-hyhy": get_prod_hyhy_manifold,
         "prod-hyeu": get_prod_hyeu_manifold,
+        "prod-sphsph": get_prod_sphsph_manifold,
         "spd": lambda dims: SymmetricPositiveDefinite(),
     }
 

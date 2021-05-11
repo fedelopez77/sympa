@@ -106,10 +106,10 @@ def bmm(x: torch.Tensor, y: torch.Tensor):
     """
     real_x, imag_x = real(x), imag(x)
     real_y, imag_y = real(y), imag(y)
-    ac = real_x.bmm(real_y)
-    bd = imag_x.bmm(imag_y)
-    ad = real_x.bmm(imag_y)
-    bc = imag_x.bmm(real_y)
+    ac = real_x @ real_y
+    bd = imag_x @ imag_y
+    ad = real_x @ imag_y
+    bc = imag_x @ real_y
     out_real = ac - bd
     out_imag = ad + bc
     return stick(out_real, out_imag)
@@ -212,16 +212,40 @@ def inverse(z: torch.Tensor):
     :param z: b x * x 2 x n x n
     """
     a, c = real(z), imag(z)
-    if torch.all(a == 0):
-        imag_inverse = torch.inverse(c)
-        return stick(a, imag_inverse)
-    if torch.all(c == 0):
-        real_inverse = torch.inverse(a)
-        return stick(real_inverse, c)
 
-    r = torch.inverse(a).bmm(c)
-    u = torch.inverse(c.bmm(r) + a)
-    v = (r.bmm(u)) * -1
+    zeros_in_real_idx = (a[:, 0] == 0).float().sum(-1) == a.size(-1)    # checks that first row is all zeros
+    zeros_in_imag_idx = (c[:, 0] == 0).float().sum(-1) == c.size(-1)    # checks that first row is all zeros
+    is_there_zeros_in_real = torch.any(zeros_in_real_idx)
+    is_there_zeros_in_imag = torch.any(zeros_in_imag_idx)
+
+    if is_there_zeros_in_real:
+        imag_inverse = torch.inverse(c)
+        # adds the identity where A is zero, and adds zeros elsewhere
+        delta = torch.zeros_like(a)
+        delta[zeros_in_real_idx] = torch.eye(a.size(-1), dtype=a.dtype, device=a.device)
+        a = a + delta
+    if is_there_zeros_in_imag:
+        real_inverse = torch.inverse(a)
+        # adds the identity where C is zero, and adds zeros elsewhere
+        delta = torch.zeros_like(c)
+        delta[zeros_in_imag_idx] = torch.eye(c.size(-1), dtype=c.dtype, device=c.device)
+        c = c + delta
+
+    # actual computation of inverse
+    r = torch.inverse(a) @ c
+    u = torch.inverse(c @ r + a)
+    v = (r @ u) * -1
+
+    if is_there_zeros_in_real:
+        zeros_in_real_idx = zeros_in_real_idx.reshape(-1, 1, 1)
+        u = torch.where(zeros_in_real_idx, torch.zeros_like(u), u)
+        v = torch.where(zeros_in_real_idx, imag_inverse, v)
+
+    if is_there_zeros_in_imag:
+        zeros_in_imag_idx = zeros_in_imag_idx.reshape(-1, 1, 1)
+        u = torch.where(zeros_in_imag_idx, real_inverse, u)
+        v = torch.where(zeros_in_imag_idx, torch.zeros_like(v), v)
+
     return stick(u, v)
 
 
@@ -244,7 +268,7 @@ def positive_conjugate_projection(y: torch.Tensor):
     eigenvalues, s = symeig(y)
     eigenvalues_tilde = torch.clamp(eigenvalues, min=EPS[y.dtype])
     d_tilde = torch.diag_embed(eigenvalues_tilde)
-    y_tilde = s.bmm(d_tilde).bmm(s.inverse())
+    y_tilde = s @ d_tilde @ s.transpose(-1, -2)
 
     # we do this so no operation is applied on the matrices that already belong to the space.
     # This prevents modifying values due to numerical instabilities/floating point ops
@@ -254,7 +278,7 @@ def positive_conjugate_projection(y: torch.Tensor):
     return torch.where(mask, y, y_tilde), batch_wise_mask
 
 
-def symeig(y: torch.Tensor):
+def symeig(y: torch.Tensor, eigenvectors=True):
     """
     If Y is a squared symmetric matrix, then Y can be decomposed (diagonalized) as Y = SDS^-1
     where S is the matrix composed by the eigenvectors of Y (S = [v_1, v_2, ..., v_n] where v_i are the
@@ -265,11 +289,10 @@ def symeig(y: torch.Tensor):
     :return: eigenvalues (in ascending order): b x * x n
     :return: eigenvectors: b x * x n x n
     """
-    eigenvalues, eigenvectors = torch.symeig(y, eigenvectors=True)      # evalues are in ascending order
-    return eigenvalues, eigenvectors
+    return torch.symeig(y, eigenvectors=eigenvectors)      # evalues are in ascending order
 
 
-def xitorch_symeig(y: torch.Tensor):
+def xitorch_symeig(y: torch.Tensor, eigenvectors=True):
     """
     Idem symeig but using xitorch.
     This is done in this way since according to pytorch documentation for symeig
@@ -288,10 +311,12 @@ def xitorch_symeig(y: torch.Tensor):
     import xitorch
     from xitorch.linalg import symeig as xit_symeig_op
     linop = xitorch.LinearOperator.m(y)
-    eigenvalues, eigenvectors = xit_symeig_op(linop,
-                                              bck_optioins={"degen_atol": 1e-22, "degen_rtol": 1e-22},
-                                              neig=y.shape[-1], method="custom_exacteig", max_niter=1000)
-    return eigenvalues, eigenvectors
+    evals, evecs = xit_symeig_op(linop,
+                                 bck_options={"degen_atol": 1e-22, "degen_rtol": 1e-22},
+                                 neig=y.shape[-1], method="custom_exacteig", max_niter=1000)
+    if eigenvectors:
+        return evals, evecs
+    return evals
 
 
 def identity(dims: int):
@@ -348,6 +373,67 @@ def to_hermitian(x: torch.Tensor):
     lower_triangular = upper_triangular.transpose(-2, -1) * -1
     new_imag_x = lower_triangular + upper_triangular
     return stick(real_x, new_imag_x)
+
+
+def from_upper_to_spd(z: torch.Tensor):
+    """
+    Given Z = X + iY in the Upper Half Space of rank n, maps the point to
+    U = [(Y+XY^-1X,     XY^-1),
+         (Y^-1X,        Y^-1)]  with U in the SPD manifold of rank 2n
+
+    :param z: b x 2 x n x n. Points in the Upper Half space
+    :return: b x 2n x 2n: Points in the SPD manifold
+    """
+    x, y = real(z), imag(z)
+    inv_y = torch.inverse(y)
+
+    y_plus_xinvyx = y + x @ inv_y @ x
+    xinvy = x @ inv_y
+    invyx = inv_y @ x
+
+    top_row = torch.cat((y_plus_xinvyx, xinvy), dim=-1)
+    bot_row = torch.cat((invyx, inv_y), dim=-1)
+    u = torch.cat((top_row, bot_row), dim=-2)         # b x 2n x 2n
+    u = squared_to_symmetric(u)     # impose symmetry due to numeric instabilities
+    return u
+
+
+def from_spd_to_upper(u: torch.Tensor):
+    """
+    Given U = [(Y + XY^-1X  XY^-1),  =  [(A, B),
+               (Y^-1X       Y^-1)]       (C, D)]
+    with U in the SPD manifold of rank 2n, it maps it to
+    Z = X + iY in the Upper Half Space of rank n
+
+    Y = D^-1
+    X = BY = XY^-1Y
+
+    :param u: b x 2n x 2n: Points in the SPD manifold
+    :return b x 2 x n x n. Points in the Upper half space
+    """
+    b_on_top_of_d = torch.chunk(u, 2, dim=-1)[-1]
+    b, d = torch.chunk(b_on_top_of_d, 2, dim=-2)
+    y = torch.inverse(d)
+    x = b @ y
+    return stick(squared_to_symmetric(x), squared_to_symmetric(y))      # impose symmetric due to numeric instabilities
+
+
+def to_compound_symmetric(z: torch.Tensor):
+    """
+    Let Z = A + iB be a matrix with complex entries, where A, B are n x n matrices with real entries.
+    We build a 2n x 2n matrix in the following form:
+        M = [(A, B),
+             (B, -A)]
+    Since Z is symmetric, then M is symmetric and with all real entries.
+
+    :param z: b x * x 2 x n x n. PRE: Each matrix in x must be complex symmetric
+    :return: m: b x * x 2n x 2n. Symmetric matrix with all real entries
+    """
+    a, b = real(z), imag(z)
+    a_and_b = torch.cat((a, b), dim=-1)
+    b_and_minus_a = torch.cat((b, -a), dim=-1)
+    m = torch.cat((a_and_b, b_and_minus_a), dim=-2)
+    return m
 
 
 def to_compound_real_symmetric_from_hermitian(h: torch.Tensor):
@@ -431,4 +517,4 @@ def matrix_sqrt(y: torch.Tensor):
     """
     eigvalues, eigvectors = symeig(y)
     d_sq = torch.diag_embed(torch.sqrt(eigvalues))
-    return eigvectors.bmm(d_sq).bmm(eigvectors.inverse())
+    return eigvectors @ d_sq @ eigvectors.transpose(-1, -2)

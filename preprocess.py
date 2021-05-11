@@ -75,7 +75,7 @@ def get_graph(args):
 
 def load_graph(args):
     path = f"data/{args.graph}/{args.graph}.edges"
-    graph = nx.Graph()
+    graph = nx.Graph(name=args.graph)
     with open(path, "r") as f:
         for line in f:
             line = line.strip().split()
@@ -93,7 +93,9 @@ def plot_graph(graph, path):
     pos = nx.spring_layout(graph, iterations=100)
     fig = plt.figure()
     nx.draw(graph, pos, ax=fig.add_subplot(111), node_size=5, with_labels=True, label=graph.name)
-    plt.savefig(path / (graph.name + ".png"))
+    img_path = path / (graph.name + ".png")
+    log.info(f"Saving graph plot to {img_path}")
+    plt.savefig(img_path)
 
 
 def build_triples(graph):
