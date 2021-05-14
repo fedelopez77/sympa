@@ -1,6 +1,7 @@
 # sympa
 Embeddings graphs in **sym**metric s**pa**ces.  
-Code for the papers "Symmetric Spaces for Graph Embeddings: A Finsler-Riemannian Approach" published at ICML 2021.
+Code for the papers "Symmetric Spaces for Graph Embeddings: A Finsler-Riemannian Approach" (link to paper coming soon) published at ICML 2021, 
+and the paper ["Hermitian Symmetric Spaces for Graph Embeddings"](https://arxiv.org/abs/2105.05275) published at DiffGeo4DL @ NeurIPS 2020.
 
 <p align="middle">
   <img src="img/GraphInSymSpace.jpg" width="30%" />
