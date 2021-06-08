@@ -4,7 +4,7 @@ Code for the papers "Symmetric Spaces for Graph Embeddings: A Finsler-Riemannian
 and the paper ["Hermitian Symmetric Spaces for Graph Embeddings"](https://arxiv.org/abs/2105.05275) published at DiffGeo4DL @ NeurIPS 2020.
 
 <p align="middle">
-  <img src="img/GraphInSymSpace.jpg" width="30%" />
+  <img src="img/Embeddings600x600.png" width="30%" />
   <img src="img/Transition.jpg" width="35%" />
 </p>
 
@@ -131,6 +131,7 @@ However, we found them to be very unstable, therefore all experiments reported i
 
 ## TODO
 - [ ] Fix broken tests
+- [ ] Add Finsler Metrics to SPD manifold
 - [ ] Merge branch with Recommender System experiments into master
 - [ ] Merge branch with ploting tools into master
 
