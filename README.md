@@ -139,5 +139,17 @@ However, we found them to be very unstable, therefore all experiments reported i
 The source code and data in this repository aims at facilitating the study of graph embeddings in symmetric spaces. 
 If you use the code/data, please cite it as follows:
 ```
-Add citation
+@article{lopez2021hermitianEmbeddings,
+  author    = {Federico L\'opez and
+               Beatrice Pozzetti and
+               Steve Trettel and
+               Anna Wienhard},
+  title     = {Hermitian Symmetric Spaces for Graph Embeddings},
+  journal   = {CoRR},
+  volume    = {abs/2105.05275},
+  year      = {2021},
+  url       = {https://arxiv.org/abs/2105.05275},
+  archivePrefix = {arXiv},
+  eprint    = {2105.05275}
+}
 ```
