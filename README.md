@@ -1,6 +1,6 @@
 # sympa
 Embeddings graphs in **sym**metric s**pa**ces.  
-Code for the papers "Symmetric Spaces for Graph Embeddings: A Finsler-Riemannian Approach" (link to paper coming soon) published at ICML 2021, 
+Code for the papers ["Symmetric Spaces for Graph Embeddings: A Finsler-Riemannian Approach"](https://arxiv.org/abs/2106.04941) published at ICML 2021, 
 and the paper ["Hermitian Symmetric Spaces for Graph Embeddings"](https://arxiv.org/abs/2105.05275) published at DiffGeo4DL @ NeurIPS 2020.
 
 <p align="middle">
@@ -139,17 +139,12 @@ However, we found them to be very unstable, therefore all experiments reported i
 The source code and data in this repository aims at facilitating the study of graph embeddings in symmetric spaces. 
 If you use the code/data, please cite it as follows:
 ```
-@article{lopez2021hermitianEmbeddings,
-  author    = {Federico L\'opez and
-               Beatrice Pozzetti and
-               Steve Trettel and
-               Anna Wienhard},
-  title     = {Hermitian Symmetric Spaces for Graph Embeddings},
-  journal   = {CoRR},
-  volume    = {abs/2105.05275},
-  year      = {2021},
-  url       = {https://arxiv.org/abs/2105.05275},
-  archivePrefix = {arXiv},
-  eprint    = {2105.05275}
+@misc{lopez2021symmetric,
+      title={Symmetric Spaces for Graph Embeddings: A Finsler-Riemannian Approach}, 
+      author={Federico L\'opez and Beatrice Pozzetti and Steve Trettel and Michael Strube and Anna Wienhard},
+      year={2021},
+      eprint={2106.04941},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG}
 }
 ```
