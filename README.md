@@ -139,12 +139,18 @@ However, we found them to be very unstable, therefore all experiments reported i
 The source code and data in this repository aims at facilitating the study of graph embeddings in symmetric spaces. 
 If you use the code/data, please cite it as follows:
 ```
-@misc{lopez2021symmetric,
-      title={Symmetric Spaces for Graph Embeddings: A Finsler-Riemannian Approach}, 
-      author={Federico L\'opez and Beatrice Pozzetti and Steve Trettel and Michael Strube and Anna Wienhard},
-      year={2021},
-      eprint={2106.04941},
-      archivePrefix={arXiv},
-      primaryClass={cs.LG}
+@InProceedings{lopez2021symmetric,
+  title =    {Symmetric Spaces for Graph Embeddings: A Finsler-Riemannian Approach},
+  author =       {Lopez, Federico and Pozzetti, Beatrice and Trettel, Steve and Strube, Michael and Wienhard, Anna},
+  booktitle =    {Proceedings of the 38th International Conference on Machine Learning},
+  pages =    {7090--7101},
+  year =     {2021},
+  editor =   {Meila, Marina and Zhang, Tong},
+  volume =   {139},
+  series =   {Proceedings of Machine Learning Research},
+  month =    {18--24 Jul},
+  publisher =    {PMLR},
+  pdf =      {http://proceedings.mlr.press/v139/lopez21a/lopez21a.pdf},
+  url =      {http://proceedings.mlr.press/v139/lopez21a.html}
 }
 ```
