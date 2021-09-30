@@ -1,6 +1,5 @@
-# sympa
-Embeddings graphs in **sym**metric s**pa**ces.  
-Code for the papers ["Symmetric Spaces for Graph Embeddings: A Finsler-Riemannian Approach"](https://arxiv.org/abs/2106.04941) published at ICML 2021, 
+# sympa: Symmetric Spaces for Graph Embeddings
+Code for the papers ["Symmetric Spaces for Graph Embeddings: A Finsler-Riemannian Approach"](https://proceedings.mlr.press/v139/lopez21a.html) published at ICML 2021, 
 and the paper ["Hermitian Symmetric Spaces for Graph Embeddings"](https://arxiv.org/abs/2105.05275) published at DiffGeo4DL @ NeurIPS 2020.
 
 <p align="middle">
@@ -141,7 +140,7 @@ If you use the code/data, please cite it as follows:
 ```
 @InProceedings{lopez2021symmetric,
   title =    {Symmetric Spaces for Graph Embeddings: A Finsler-Riemannian Approach},
-  author =       {Lopez, Federico and Pozzetti, Beatrice and Trettel, Steve and Strube, Michael and Wienhard, Anna},
+  author =       {L\'opez, Federico and Pozzetti, Beatrice and Trettel, Steve and Strube, Michael and Wienhard, Anna},
   booktitle =    {Proceedings of the 38th International Conference on Machine Learning},
   pages =    {7090--7101},
   year =     {2021},
